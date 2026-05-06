@@ -454,6 +454,10 @@ export const updateOrderStatus = async (req, res, next) => {
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
     order.status = status
+    if (status === 'completed' && !order.isCompleted) {
+      order.isCompleted = true
+      order.completedAt = new Date()
+    }
     await order.save()
     
     res.json({ ok: true, order })

@@ -151,7 +151,13 @@ export const updateOrder = async (req, res, next) => {
       if (contact)    order.contact    = contact.trim()
       if (design)     order.design     = design.trim()
       if (deadline)   order.deadline   = new Date(deadline)
-      if (status)     order.status     = status
+      if (status) {
+        order.status = status
+        if (status === 'completed' && !order.isCompleted) {
+          order.isCompleted = true
+          order.completedAt = new Date()
+        }
+      }
       if (upperPrice) order.upperPrice = Number(upperPrice)
       if (lowerPrice) order.lowerPrice = Number(lowerPrice)
       if (totalAmount !== undefined) order.totalAmount = Number(totalAmount)
@@ -247,6 +253,10 @@ export const advanceOrderStage = async (req, res, next) => {
     }
 
     order.status = nextStage
+    if (nextStage === 'completed' && !order.isCompleted) {
+      order.isCompleted = true
+      order.completedAt = new Date()
+    }
     if (note) order.notes = (order.notes ? order.notes + '\n' : '') + `[${nextStage}] ${note}`
     if (extraUpdate?.designFiles)    order.designFiles    = extraUpdate.designFiles
     if (extraUpdate?.designFileUrl)  order.designFileUrl  = extraUpdate.designFileUrl
