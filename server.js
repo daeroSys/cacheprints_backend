@@ -30,8 +30,8 @@ const PORT = process.env.PORT || 5000
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
-  process.env.CLIENT_URL?.replace(/\/$/, ''),
-  process.env.JOS_CLIENT_URL?.replace(/\/$/, ''),
+  ...(process.env.CLIENT_URL || '').split(',').map(url => url.trim().replace(/\/$/, '')),
+  ...(process.env.JOS_CLIENT_URL || '').split(',').map(url => url.trim().replace(/\/$/, '')),
 ].filter(Boolean)
 
 app.use(cors({
@@ -42,7 +42,11 @@ app.use(cors({
     // Normalize origin for comparison
     const normalizedOrigin = origin.replace(/\/$/, '')
     
-    if (allowedOrigins.includes(normalizedOrigin) || process.env.NODE_ENV !== 'production') {
+    const isAllowed = allowedOrigins.includes(normalizedOrigin) || 
+                     (process.env.NODE_ENV !== 'production') ||
+                     normalizedOrigin.endsWith('.vercel.app') && normalizedOrigin.includes('cacheprints')
+
+    if (isAllowed) {
       callback(null, true)
     } else {
       console.error(`CORS Blocked: ${origin} not in [${allowedOrigins.join(', ')}]`)
