@@ -2,10 +2,16 @@ import jwt from 'jsonwebtoken'
 import User from '../models/User.js'
 import Product from '../models/Product.js'
 import Order from '../models/Order.js'
+import ActivityLog from '../models/ActivityLog.js'
 
 // ── Helper: generate JWT ──────────────────────────────────────────────────────
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' })
+
+const logActivity = async (data) => {
+  try { await ActivityLog.create({ logId: `LOG-${Date.now()}`, timestamp: new Date(), ...data }) }
+  catch (_) {}
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @route   POST /api/jos/auth/register
@@ -365,6 +371,15 @@ export const approvePayment = async (req, res, next) => {
     order.payment = 'Partial' // IMS status
     await order.save()
     
+    await logActivity({
+      action: 'Payment Approved',
+      detail: `Payment for JOS order ${order.orderId} approved by Admin. Status: Designing.`,
+      user: req.user.username || req.user.name || 'Admin',
+      entityType: 'Order',
+      entityId: order.orderId,
+      changes: { status: { from: 'pending-payment', to: 'Designing' }, paidAmount: order.paidAmount }
+    })
+    
     res.json({ ok: true, order })
   } catch (err) { next(err) }
 }
@@ -398,6 +413,15 @@ export const startProduction = async (req, res, next) => {
     order.status = 'Printing'
     order.productionPhase = 'Printing' 
     await order.save()
+    
+    await logActivity({
+      action: 'Production Started',
+      detail: `Design uploaded for order ${order.orderId}. Status: Printing.`,
+      user: req.user.username || req.user.name || 'Admin',
+      entityType: 'Order',
+      entityId: order.orderId,
+      changes: { status: { from: 'Designing', to: 'Printing' }, finalDesignUrl: 'Uploaded' }
+    })
     
     res.json({ ok: true, order })
   } catch (err) { next(err) }
