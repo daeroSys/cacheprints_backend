@@ -18,7 +18,10 @@ import { startAutoBackup } from './controllers/backupController.js'
 import josRoutes from './routes/josRoutes.js'
 
 // ── Connect to MongoDB ────────────────────────────────────────────────────────
-connectDB()
+console.log('⏳ Attempting to connect to MongoDB...')
+connectDB().then(() => {
+  console.log('✅ Database connection sequence completed.')
+})
 
 const app  = express()
 const PORT = process.env.PORT || 5000
