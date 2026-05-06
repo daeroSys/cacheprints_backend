@@ -123,6 +123,11 @@ export const getInventoryMetrics = async () => {
 
   } catch (error) {
     console.error('Error computing inventory metrics:', error)
-    return []
+    // Fallback: return raw materials without advanced metrics if calculation fails
+    try {
+      return await Material.find({ isArchived: { $ne: true } }).lean()
+    } catch (fallbackError) {
+      return []
+    }
   }
 }
