@@ -102,6 +102,12 @@ export const updateMaterial = async (req, res, next) => {
     const before = { name: material.name, category: material.category, costPerUnit: material.costPerUnit, minQty: material.minQty, maxQty: material.maxQty, leadTime: material.leadTime, reorderQuantity: material.reorderQuantity, link: material.link }
 
     const { name, category, unit, costPerUnit, minQty, maxQty, leadTime, reorderQuantity, link } = req.body
+    
+    // Manual ID repair for legacy records
+    if (!material.materialId) {
+      material.materialId = `MAT-${Math.floor(Math.random() * 10000000).toString().padStart(8, '0')}`
+    }
+
     if (name)        material.name        = name
     if (category)    material.category    = category
     if (unit)        material.unit        = unit
