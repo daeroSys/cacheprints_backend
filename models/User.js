@@ -7,6 +7,10 @@ import bcrypt from 'bcryptjs'
 
 const userSchema = new mongoose.Schema(
   {
+    _id: {
+      type: String,
+      default: () => new mongoose.Types.ObjectId().toString(),
+    },
     username: {
       type: String,
       unique: true,
@@ -38,9 +42,14 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    phone: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     role: {
       type: String,
-      enum: ['Admin', 'Staff', 'Customer'],
+      enum: ['Admin', 'Staff', 'Customer', 'customer', 'staff', 'admin'],
       default: 'Customer',
     },
     approvedBy: {

@@ -28,7 +28,12 @@ export const login = async (req, res, next) => {
     if (!username || !password)
       return res.status(400).json({ ok: false, error: 'Please enter username and password.' })
 
-    const user = await User.findOne({ username: username.trim() }).select('+password')
+    const user = await User.findOne({
+      $or: [
+        { username: username.trim() },
+        { email: username.trim().toLowerCase() }
+      ]
+    }).select('+password')
     if (!user)
       return res.status(401).json({ ok: false, error: 'Invalid username or password.' })
     if (user.isArchived)
@@ -49,6 +54,7 @@ export const login = async (req, res, next) => {
         name:       user.name,
         email:      user.email,
         contact:    user.contact,
+        phone:      user.phone,
         role:       user.role,
         approvedBy: user.approvedBy,
         createdAt:  user.createdAt,
@@ -150,13 +156,14 @@ export const getMe = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateProfile = async (req, res, next) => {
   try {
-    const { name, email, contact } = req.body
+    const { name, email, contact, phone } = req.body
     const user = await User.findById(req.user._id)
 
-    const before = { name: user.name, email: user.email, contact: user.contact }
+    const before = { name: user.name, email: user.email, contact: user.contact, phone: user.phone }
     user.name    = name?.trim()    || user.name
     user.email   = email?.trim()   || user.email
-    user.contact = contact?.trim() || ''
+    user.contact = contact?.trim() || user.contact
+    user.phone   = phone?.trim()   || user.phone
     await user.save()
 
     await logActivity({

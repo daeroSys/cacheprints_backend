@@ -36,7 +36,9 @@ export const registerCustomer = async (req, res, next) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        contact: user.contact,
+        phone: user.phone
       }
     })
   } catch (err) { next(err) }
@@ -69,7 +71,9 @@ export const loginCustomer = async (req, res, next) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        contact: user.contact,
+        phone: user.phone
       }
     })
   } catch (err) { next(err) }
@@ -198,13 +202,14 @@ export const deleteProduct = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateCustomerProfile = async (req, res, next) => {
   try {
-    const { name, contact } = req.body
+    const { name, contact, phone } = req.body
     const user = await User.findById(req.user._id)
     
     user.name = name || user.name
     user.contact = contact || user.contact
+    user.phone = phone || user.phone
     await user.save()
 
-    res.json({ ok: true, user: { id: user._id, name: user.name, email: user.email, contact: user.contact } })
+    res.json({ ok: true, user: { id: user._id, name: user.name, email: user.email, contact: user.contact, phone: user.phone } })
   } catch (err) { next(err) }
 }
