@@ -15,9 +15,17 @@ const logActivity = async (data) => {
 export const getMaterials = async (req, res, next) => {
   try {
     const materials = await getInventoryMetrics()
-    materials.sort((a, b) => a.name.localeCompare(b.name))
+    // Safer sort: handle missing names or non-string values
+    materials.sort((a, b) => {
+      const nameA = String(a.name || '').toLowerCase()
+      const nameB = String(b.name || '').toLowerCase()
+      return nameA.localeCompare(nameB)
+    })
     res.json({ ok: true, materials })
-  } catch (err) { next(err) }
+  } catch (err) { 
+    console.error('Error in getMaterials controller:', err)
+    next(err) 
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
