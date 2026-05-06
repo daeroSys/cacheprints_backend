@@ -66,13 +66,25 @@ export const signup = async (req, res, next) => {
   try {
     const { username, name, email, contact, role, password, adminUsername, adminPassword } = req.body
 
-    // Verify the approving admin
-    const admin = await User.findOne({ username: adminUsername, role: 'Admin', isArchived: false }).select('+password')
-    if (!admin)
-      return res.status(403).json({ ok: false, error: 'Admin not found or account is archived.' })
-    const adminMatch = await admin.matchPassword(adminPassword)
-    if (!adminMatch)
-      return res.status(403).json({ ok: false, error: 'Incorrect admin password.' })
+    // ── First Admin Bypass ──
+    // If no users exist yet, allow creating the first one without approval
+    const userCount = await User.countDocuments()
+    let finalRole = role || 'Staff'
+    let approvedBy = 'Admin Approval'
+
+    if (userCount === 0) {
+      finalRole = 'Admin' // First user is always Admin
+      approvedBy = 'System (Initial Setup)'
+    } else {
+      // Standard Admin Approval Check
+      const admin = await User.findOne({ username: adminUsername, role: 'Admin', isArchived: false }).select('+password')
+      if (!admin)
+        return res.status(403).json({ ok: false, error: 'Admin not found or account is archived.' })
+      const adminMatch = await admin.matchPassword(adminPassword)
+      if (!adminMatch)
+        return res.status(403).json({ ok: false, error: 'Incorrect admin password.' })
+      approvedBy = admin.username
+    }
 
     // Check username uniqueness
     const exists = await User.findOne({ username: username.trim() })
@@ -85,8 +97,8 @@ export const signup = async (req, res, next) => {
       name:       name.trim(),
       email:      email.trim().toLowerCase(),
       contact:    contact?.trim() || '',
-      role:       role || 'Staff',
-      approvedBy: admin.username,
+      role:       finalRole,
+      approvedBy: approvedBy,
     })
 
     await logActivity({
