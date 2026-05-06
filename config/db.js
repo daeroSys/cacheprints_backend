@@ -5,6 +5,11 @@ dotenv.config()
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cacheprints_ims'
 
 const connectDB = async () => {
+  if (process.env.MONGODB_URI) {
+    console.log('📡 MONGODB_URI detected in Environment Variables.')
+  } else {
+    console.warn('⚠️ MONGODB_URI NOT detected. Falling back to localhost!')
+  }
   try {
     const conn = await mongoose.connect(MONGODB_URI)
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`)
