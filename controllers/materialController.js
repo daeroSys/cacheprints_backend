@@ -9,21 +9,37 @@ const logActivity = async (data) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @route   GET /api/materials
-// @desc    Get all active materials — Materials page, Stock Levels
+// @desc    Get all materials with computed inventory metrics
 // @access  Private
 // ─────────────────────────────────────────────────────────────────────────────
 export const getMaterials = async (req, res, next) => {
   try {
-    const materials = await getInventoryMetrics()
-    // Safer sort: handle missing names or non-string values
-    materials.sort((a, b) => {
+    // 1. Fetch raw materials FIRST to ensure they show up no matter what
+    const rawMaterials = await Material.find({ isArchived: { $ne: true } }).lean()
+    console.log(`🔍 Materials found in DB: ${rawMaterials.length}`)
+
+    // 2. Try to get computed metrics (Usage, Reserved, etc.)
+    let materialsWithMetrics = []
+    try {
+      materialsWithMetrics = await getInventoryMetrics()
+    } catch (metricError) {
+      console.error('⚠️ Inventory metrics calculation failed, using raw data.', metricError)
+      materialsWithMetrics = rawMaterials
+    }
+
+    // 3. Fallback to raw if metrics are empty for some reason
+    const finalMaterials = materialsWithMetrics.length > 0 ? materialsWithMetrics : rawMaterials
+
+    // 4. Safe Sort
+    finalMaterials.sort((a, b) => {
       const nameA = String(a.name || '').toLowerCase()
       const nameB = String(b.name || '').toLowerCase()
       return nameA.localeCompare(nameB)
     })
-    res.json({ ok: true, materials })
+
+    res.json({ ok: true, materials: finalMaterials })
   } catch (err) { 
-    console.error('Error in getMaterials controller:', err)
+    console.error('CRITICAL: Error in getMaterials controller:', err)
     next(err) 
   }
 }
