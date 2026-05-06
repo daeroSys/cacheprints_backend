@@ -105,7 +105,16 @@ export const getProducts = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const createOrder = async (req, res, next) => {
   try {
-    const { customerName, phoneNumber, orderType, shippingAddress, items, customizationDetails, totalPrice } = req.body
+    const { 
+      customerName, 
+      customerEmail, 
+      phoneNumber, 
+      orderType, 
+      shippingAddress, 
+      items, 
+      customizationDetails, 
+      totalPrice 
+    } = req.body
     
     // Generate an Order ID
     const orderId = `ORD-${Date.now().toString().slice(-8).toUpperCase()}`
@@ -127,6 +136,7 @@ export const createOrder = async (req, res, next) => {
       orderId,
       customer: customerName,
       customerName,
+      customerEmail,
       contact: phoneNumber,
       phoneNumber,
       orderType,
@@ -136,7 +146,7 @@ export const createOrder = async (req, res, next) => {
       totalAmount: totalPrice,
       totalPrice,
       user: req.user ? req.user._id : null,
-      status: 'Order Received',
+      status: 'pending', // Use 'pending' for JOS to trigger admin Accept/Reject
       deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days deadline
       
       // IMS Mappings
