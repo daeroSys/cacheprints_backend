@@ -26,6 +26,12 @@ connectDB().then(() => {
 
 const app  = express()
 
+// ── Immediate Request Logger ─────────────────────────────────────────────────
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.url} - ${new Date().toISOString()}`)
+  next()
+})
+
 // ── Connection Safety Middleware ──────────────────────────────────────────────
 app.use(async (req, res, next) => {
   if (mongoose.connection.readyState !== 1) {

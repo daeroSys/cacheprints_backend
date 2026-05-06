@@ -28,7 +28,6 @@ export const connectDB = async () => {
       serverSelectionTimeoutMS: 8000, // Shorter than Vercel timeout
       connectTimeoutMS: 8000,
       family: 4,
-      tlsAllowInvalidCertificates: true,
       tlsInsecure: true, 
     }
 
