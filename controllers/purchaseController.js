@@ -53,7 +53,7 @@ export const addPurchase = async (req, res, next) => {
     await logActivity({
       action:     'Recorded Purchase',
       detail:     `Purchase ${purchase.purchaseId} recorded — ${purchase.items.map(i => i.name).join(', ')}`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Purchase',
       entityId:   purchase.purchaseId,
       changes:    { items: purchase.items.map(i => ({ name: i.name, supplier: i.supplier, qtyOrdered: i.qtyOrdered, totalCost: i.totalCost })) },
@@ -139,7 +139,7 @@ export const receivePurchase = async (req, res, next) => {
     await logActivity({
       action:     'Received Purchase',
       detail:     `Purchase ${purchase.purchaseId} marked as received`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Purchase',
       entityId:   purchase.purchaseId,
       changes:    { isReceived: { from: false, to: true }, receivedAt: purchase.receivedAt },

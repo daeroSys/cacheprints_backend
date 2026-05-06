@@ -116,7 +116,7 @@ export const createOrder = async (req, res, next) => {
     await logActivity({
       action:     'Created Order',
       detail:     `Job order ${order.orderId} created for ${order.customer}`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Order',
       entityId:   order.orderId,
       changes:    { customer: order.customer, design: order.design, totalAmount: order.totalAmount, deadline: order.deadline },
@@ -179,7 +179,7 @@ export const updateOrder = async (req, res, next) => {
     await logActivity({
       action:     'Updated Order',
       detail:     `Order ${order.orderId} (${order.customer}) was updated`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Order',
       entityId:   order.orderId,
       changes,
@@ -211,7 +211,7 @@ export const completeOrder = async (req, res, next) => {
     await logActivity({
       action:     'Completed Order',
       detail:     `Order ${order.orderId} (${order.customer}) was marked as complete`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Order',
       entityId:   order.orderId,
       changes:    { paidAmount: order.paidAmount, payment: order.payment, completedAt: order.completedAt },
@@ -367,7 +367,7 @@ export const advanceOrderStage = async (req, res, next) => {
     await logActivity({
       action:     'Advanced Production Stage',
       detail:     `Order ${order.orderId} advanced from "${prevStage}" to "${nextStage}"`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Order',
       entityId:   order.orderId,
       changes:    { status: { from: prevStage, to: nextStage } },
@@ -408,7 +408,7 @@ export const archiveOrder = async (req, res, next) => {
     await logActivity({
       action:     'Archived Order',
       detail:     `Order ${order.orderId} (${order.customer}) was archived`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Order',
       entityId:   order.orderId,
     })
@@ -434,7 +434,7 @@ export const restoreOrder = async (req, res, next) => {
     await logActivity({
       action:     'Restored Order',
       detail:     `Order ${order.orderId} (${order.customer}) was restored from archive`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Order',
       entityId:   order.orderId,
     })
@@ -459,7 +459,7 @@ export const deleteOrder = async (req, res, next) => {
     await logActivity({
       action:     'Deleted Order',
       detail:     `Order ${order.orderId} (${order.customer}) was permanently deleted`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Order',
       entityId:   order.orderId,
     })

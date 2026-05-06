@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import mongoose from 'mongoose'
 import User from '../models/User.js'
 
 // ─── protect ──────────────────────────────────────────────────────────────────
@@ -15,10 +16,17 @@ export const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
     // Attach user (without password) to request
-    req.user = await User.findById(decoded.id).select('-password')
-    if (!req.user || req.user.isArchived) {
+    // Since _id can be String or ObjectId, we try finding by decoded.id first,
+    // and if not found and it's a valid ObjectId hex, we try as ObjectId.
+    let user = await User.findById(decoded.id).select('-password')
+    if (!user && mongoose.Types.ObjectId.isValid(decoded.id)) {
+      user = await User.findOne({ _id: new mongoose.Types.ObjectId(decoded.id) }).select('-password')
+    }
+
+    if (!user || user.isArchived) {
       return res.status(401).json({ ok: false, error: 'User no longer exists or is archived.' })
     }
+    req.user = user
 
     next()
   } catch (err) {
@@ -30,7 +38,8 @@ export const protect = async (req, res, next) => {
 // Must be used AFTER protect middleware.
 // Blocks Staff users from Admin-only endpoints.
 export const adminOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'Admin') {
+  const role = req.user?.role?.toLowerCase()
+  if (role === 'admin') {
     return next()
   }
   return res.status(403).json({

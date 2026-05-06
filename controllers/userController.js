@@ -48,8 +48,8 @@ export const archiveUser = async (req, res, next) => {
 
     await logActivity({
       action:     'Archived User',
-      detail:     `@${user.username} (${user.name}) was archived by @${req.user.username}`,
-      user:       req.user.username,
+      detail:     `@${user.username} (${user.name}) was archived by @${(req.user.username || req.user.name || req.user.email)}`,
+      user:       (req.user.username || req.user.name || req.user.email),
       entityType: 'User',
       entityId:   user.username,
     })
@@ -74,8 +74,8 @@ export const restoreUser = async (req, res, next) => {
 
     await logActivity({
       action:     'Restored User',
-      detail:     `@${user.username} (${user.name}) was restored by @${req.user.username}`,
-      user:       req.user.username,
+      detail:     `@${user.username} (${user.name}) was restored by @${(req.user.username || req.user.name || req.user.email)}`,
+      user:       (req.user.username || req.user.name || req.user.email),
       entityType: 'User',
       entityId:   user.username,
     })
@@ -104,8 +104,8 @@ export const updateUser = async (req, res, next) => {
 
     await logActivity({
       action:     'Updated User',
-      detail:     `@${user.username} was updated by @${req.user.username}`,
-      user:       req.user.username,
+      detail:     `@${user.username} was updated by @${(req.user.username || req.user.name || req.user.email)}`,
+      user:       (req.user.username || req.user.name || req.user.email),
       entityType: 'User',
       entityId:   user.username,
     })

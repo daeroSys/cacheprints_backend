@@ -60,7 +60,7 @@ const orderSchema = new mongoose.Schema(
       default: '',
     },
     user: {
-      type: String,
+      type: mongoose.Schema.Types.Mixed,
       ref: 'User',
       default: null,
     },

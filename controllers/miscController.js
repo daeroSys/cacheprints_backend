@@ -66,7 +66,7 @@ export const updateSettings = async (req, res, next) => {
       logId:      `LOG-${Date.now()}`,
       action:     'Updated Settings',
       detail:     'Shop information was updated',
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'System',
       entityId:   'settings',
       timestamp:  new Date(),

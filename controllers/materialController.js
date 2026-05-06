@@ -79,7 +79,7 @@ export const addMaterial = async (req, res, next) => {
     await logActivity({
       action:     'Added Material',
       detail:     `"${material.name}" (${material.category}) was added to materials`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Material',
       entityId:   material.materialId,
       changes:    { name: material.name, category: material.category, unit: material.unit, quantity: material.quantity, costPerUnit: material.costPerUnit },
@@ -129,7 +129,7 @@ export const updateMaterial = async (req, res, next) => {
     await logActivity({
       action:     'Updated Material',
       detail:     `"${material.name}" material info was updated`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Material',
       entityId:   material.materialId,
       changes,
@@ -176,7 +176,7 @@ export const adjustStock = async (req, res, next) => {
     await logActivity({
       action:     'Adjusted Stock',
       detail:     `"${material.name}" stock adjusted by ${adjustment > 0 ? '+' : ''}${adjustment} ${material.unit}. Reason: ${reason}`,
-      user:       req.user.username,
+      user:       req.user.username || req.user.name || req.user.email,
       entityType: 'Stock',
       entityId:   material.materialId,
       changes:    { quantity: { from: before, to: material.quantity } },
