@@ -25,14 +25,17 @@ export const connectDB = async () => {
 
   if (!cached.promise) {
     const opts = {
-      serverSelectionTimeoutMS: 15000,
-      connectTimeoutMS: 15000,
+      serverSelectionTimeoutMS: 8000, // Shorter than Vercel timeout
+      connectTimeoutMS: 8000,
       family: 4,
       tlsAllowInvalidCertificates: true,
-      tlsInsecure: true, // Additional fallback for certificate issues
+      tlsInsecure: true, 
     }
 
-    console.log('📡 Initiating new MongoDB connection...')
+    // Mask password in URI for logging
+    const maskedURI = MONGODB_URI.replace(/:([^:@]+)@/, ':****@')
+    console.log(`📡 Connecting to: ${maskedURI}`)
+    
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
       console.log(`✅ MongoDB Connected: ${mongoose.connection.host}`)
       return mongoose
