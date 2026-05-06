@@ -62,7 +62,11 @@ export const login = async (req, res, next) => {
         createdAt:  user.createdAt,
       },
     })
-  } catch (err) { next(err) }
+  } catch (err) {
+    console.error(`[AUTH] Login Error: ${err.message}`)
+    console.error(err.stack)
+    next(err) 
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -2,27 +2,28 @@ import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 dotenv.config()
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cacheprints_ims'
-
-const connectDB = async () => {
-  if (process.env.MONGODB_URI) {
-    console.log('📡 MONGODB_URI detected in Environment Variables.')
-  } else {
-    console.warn('⚠️ MONGODB_URI NOT detected. Falling back to localhost!')
-  }
+export const connectDB = async () => {
   try {
+    const MONGODB_URI = process.env.MONGODB_URI
+    if (!MONGODB_URI) {
+      console.error('❌ MONGODB_URI is not defined in environment variables')
+      process.exit(1)
+    }
+
     const conn = await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 10000, 
-      // If you are seeing "certificate validation failed", you can temporarily 
-      // uncomment the line below to bypass SSL checks (INSECURE - DEBUG ONLY)
+      connectTimeoutMS: 10000,
+      family: 4, // Force IPv4 to avoid serverless connection issues
       tlsAllowInvalidCertificates: true, 
     })
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`)
     console.log(`📦 Database: ${conn.connection.name}`)
+    return conn
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`)
-    if (error.message.includes('certificate')) {
-      console.error('💡 HINT: This looks like an SSL/Certificate issue. Check your connection string and Atlas whitelisting.')
+    // Don't exit process in production/serverless, just log
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1)
     }
   }
 }

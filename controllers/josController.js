@@ -82,7 +82,11 @@ export const loginCustomer = async (req, res, next) => {
         phone: user.phone
       }
     })
-  } catch (err) { next(err) }
+  } catch (err) { 
+    console.error(`[JOS] loginCustomer Error: ${err.message}`)
+    console.error(err.stack)
+    next(err) 
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
