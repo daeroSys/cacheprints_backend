@@ -81,7 +81,7 @@ export const loginCustomer = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const getProducts = async (req, res, next) => {
   try {
-    const products = await Product.find({ isArchived: false })
+    const products = await Product.find({ isArchived: { $ne: true } })
     res.json(products)
   } catch (err) { next(err) }
 }

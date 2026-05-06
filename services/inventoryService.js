@@ -7,7 +7,7 @@ import Product from '../models/Product.js'
 export const getInventoryMetrics = async () => {
   try {
     // 1. Fetch all active materials
-    const materials = await Material.find({ isArchived: false }).lean()
+    const materials = await Material.find({ isArchived: { $ne: true } }).lean()
     
     // 2. Compute Average Daily Usage (last 30 days)
     const thirtyDaysAgo = new Date()
@@ -39,11 +39,11 @@ export const getInventoryMetrics = async () => {
     // Fetch pending orders
     const pendingOrders = await Order.find({ 
       isCompleted: false, 
-      isArchived: false 
+      isArchived: { $ne: true } 
     }).lean()
 
     // Fetch products to get BOM
-    const products = await Product.find({ isArchived: false }).lean()
+    const products = await Product.find({ isArchived: { $ne: true } }).lean()
     
     // Create a map to quickly find BOM by product name or type
     // Assuming order row upperType/lowerType matches product name or type
