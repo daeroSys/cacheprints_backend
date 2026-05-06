@@ -6,10 +6,10 @@ dotenv.config()
  * Global is used here to maintain a cached connection across hot reloads
  * in development and between function invocations in serverless (Vercel).
  */
-let cached = global.mongoose
+let cached = globalThis.mongoose
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null }
+  cached = globalThis.mongoose = { conn: null, promise: null }
 }
 
 export const connectDB = async () => {
@@ -41,14 +41,13 @@ export const connectDB = async () => {
 
   try {
     cached.conn = await cached.promise
-  } catch (e) {
+  } catch (dbErr) {
+    console.error(`❌ MongoDB Connection Error: ${dbErr.message}`)
     cached.promise = null
-    console.error(`❌ MongoDB Connection Error: ${e.message}`)
-    throw e
+    throw dbErr
   }
 
   return cached.conn
 }
 
 export default connectDB
-

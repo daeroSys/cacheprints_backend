@@ -29,7 +29,7 @@ export const protect = async (req, res, next) => {
         user = await User.findOne({ _id: new mongoose.Types.ObjectId(decoded.id) }).select('-password')
       }
     } catch (dbErr) {
-      console.error(`[AUTH] Database Error during protection: ${dbErr.message}`)
+      console.error(`[AUTH] Database Error during protection: ${dbErr.message} (ReadyState: ${mongoose.connection.readyState})`)
       return next(dbErr) // Pass to global error handler (500)
     }
 
