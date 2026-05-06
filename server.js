@@ -1,4 +1,5 @@
 import express from 'express'
+import mongoose from 'mongoose'
 import cors from 'cors'
 import dotenv from 'dotenv'
 dotenv.config()
@@ -24,6 +25,19 @@ connectDB().then(() => {
 })
 
 const app  = express()
+
+// ── Connection Safety Middleware ──────────────────────────────────────────────
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    try {
+      console.log('🔄 Request received but DB not connected. Re-attempting...')
+      await connectDB()
+    } catch (err) {
+      console.error('❌ Failed to reconnect to DB during request:', err.message)
+    }
+  }
+  next()
+})
 const PORT = process.env.PORT || 5000
 
 // ── Middleware ────────────────────────────────────────────────────────────────

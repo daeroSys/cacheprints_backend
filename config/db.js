@@ -2,30 +2,53 @@ import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 dotenv.config()
 
+/**
+ * Global is used here to maintain a cached connection across hot reloads
+ * in development and between function invocations in serverless (Vercel).
+ */
+let cached = global.mongoose
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null }
+}
+
 export const connectDB = async () => {
-  try {
-    const MONGODB_URI = process.env.MONGODB_URI
-    if (!MONGODB_URI) {
-      console.error('❌ MONGODB_URI is not defined in environment variables')
-      process.exit(1)
+  const MONGODB_URI = process.env.MONGODB_URI
+  if (!MONGODB_URI) {
+    console.error('❌ MONGODB_URI is not defined')
+    process.exit(1)
+  }
+
+  if (cached.conn) {
+    return cached.conn
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+      family: 4,
+      tlsAllowInvalidCertificates: true,
+      tlsInsecure: true, // Additional fallback for certificate issues
     }
 
-    const conn = await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000, 
-      connectTimeoutMS: 10000,
-      family: 4, // Force IPv4 to avoid serverless connection issues
-      tlsAllowInvalidCertificates: true, 
+    console.log('📡 Initiating new MongoDB connection...')
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log(`✅ MongoDB Connected: ${mongoose.connection.host}`)
+      return mongoose
     })
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`)
-    console.log(`📦 Database: ${conn.connection.name}`)
-    return conn
-  } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`)
-    // Don't exit process in production/serverless, just log
-    if (process.env.NODE_ENV !== 'production') {
-      process.exit(1)
-    }
   }
+
+  try {
+    cached.conn = await cached.promise
+  } catch (e) {
+    cached.promise = null
+    console.error(`❌ MongoDB Connection Error: ${e.message}`)
+    throw e
+  }
+
+  return cached.conn
 }
 
 export default connectDB
+
