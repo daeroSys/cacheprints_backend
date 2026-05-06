@@ -62,10 +62,12 @@ export const getInventoryMetrics = async () => {
           const bom = productBoms[row.upperType]
           if (bom) {
             bom.forEach(b => {
-              const qty = b.usage[row.upperSize] || 0
-              if (qty > 0) {
-                const mid = b.materialId.toString()
-                reservedMap[mid] = (reservedMap[mid] || 0) + qty
+              if (b.materialId && b.usage) {
+                const qty = b.usage[row.upperSize] || 0
+                if (qty > 0) {
+                  const mid = b.materialId.toString()
+                  reservedMap[mid] = (reservedMap[mid] || 0) + qty
+                }
               }
             })
           }
@@ -75,10 +77,12 @@ export const getInventoryMetrics = async () => {
           const bom = productBoms[row.lowerType]
           if (bom) {
             bom.forEach(b => {
-              const qty = b.usage[row.lowerSize] || 0
-              if (qty > 0) {
-                const mid = b.materialId.toString()
-                reservedMap[mid] = (reservedMap[mid] || 0) + qty
+              if (b.materialId && b.usage) {
+                const qty = b.usage[row.lowerSize] || 0
+                if (qty > 0) {
+                  const mid = b.materialId.toString()
+                  reservedMap[mid] = (reservedMap[mid] || 0) + qty
+                }
               }
             })
           }
