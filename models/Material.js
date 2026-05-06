@@ -8,10 +8,9 @@ const materialSchema = new mongoose.Schema(
   {
     materialId: {
       type: String,
-      required: true,
       unique: true,
       trim: true,
-      // Format: MAT-XXXXXXXX (generated on frontend, stored here)
+      // Optional: if missing, we generate one in pre-save or controller
     },
     name: {
       type: String,
@@ -81,8 +80,11 @@ const materialSchema = new mongoose.Schema(
   }
 )
 
-// ── Pre-save: round quantity to 2 decimal places ─────────────────────────────
+// ── Pre-save: auto-generate materialId if missing ─────────────────────────────
 materialSchema.pre('save', function (next) {
+  if (!this.materialId) {
+    this.materialId = `MAT-${Math.floor(Math.random() * 10000000).toString().padStart(8, '0')}`
+  }
   if (this.isModified('quantity')) {
     this.quantity = Math.round(this.quantity * 100) / 100
   }
