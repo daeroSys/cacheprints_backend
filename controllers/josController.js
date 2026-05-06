@@ -150,7 +150,7 @@ export const createOrder = async (req, res, next) => {
     const order = await Order.create({
       orderId,
       customer: customerName.trim(),
-      teamName: customizationDetails?.teamName?.trim() || '',
+      teamName: customizationDetails?.teamName?.trim() || customizationDetails?.customText?.trim() || '',
       contact: phoneNumber?.trim() || '',
       customerName,
       customerEmail,
