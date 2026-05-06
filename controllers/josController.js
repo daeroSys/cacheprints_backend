@@ -142,10 +142,11 @@ export const createOrder = async (req, res, next) => {
 
     const order = await Order.create({
       orderId,
-      customer: customerName,
+      customer: customerName.trim(),
+      teamName: customizationDetails?.teamName?.trim() || '',
+      contact: phoneNumber?.trim() || '',
       customerName,
       customerEmail,
-      contact: phoneNumber,
       phoneNumber,
       orderType,
       shippingAddress,

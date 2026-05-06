@@ -91,11 +91,12 @@ export const getArchivedOrders = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const createOrder = async (req, res, next) => {
   try {
-    const { orderId, customer, contact, design, rows, upperPrice, lowerPrice, totalAmount, paidAmount, deadline, notes } = req.body
+    const { orderId, customer, teamName, contact, design, rows, upperPrice, lowerPrice, totalAmount, paidAmount, deadline, notes } = req.body
 
     const order = await Order.create({
       orderId,
       customer: customer.trim(),
+      teamName: teamName?.trim() || '',
       contact:  contact?.trim() || '',
       design:   design?.trim()  || '',
       rows:     rows || [],
@@ -141,11 +142,12 @@ export const updateOrder = async (req, res, next) => {
       status: order.status, paidAmount: order.paidAmount, notes: order.notes,
     }
 
-    const { customer, contact, design, deadline, status, paidAmount, notes, rows, upperPrice, lowerPrice, totalAmount, designFiles, designFileUrl, designFileName } = req.body
+    const { customer, teamName, contact, design, deadline, status, paidAmount, notes, rows, upperPrice, lowerPrice, totalAmount, designFiles, designFileUrl, designFileName } = req.body
 
     // Staff can only update paidAmount and notes
     if (req.user.role?.toLowerCase() === 'admin') {
       if (customer)   order.customer   = customer.trim()
+      if (teamName !== undefined) order.teamName = teamName.trim()
       if (contact)    order.contact    = contact.trim()
       if (design)     order.design     = design.trim()
       if (deadline)   order.deadline   = new Date(deadline)
