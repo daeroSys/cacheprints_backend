@@ -134,7 +134,7 @@ export const createOrder = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateOrder = async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found.' })
 
     const before = {
@@ -205,7 +205,7 @@ export const updateOrder = async (req, res, next) => {
 export const completeOrder = async (req, res, next) => {
   try {
     const { extraPayment } = req.body
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found.' })
     if (order.isCompleted) return res.status(400).json({ ok: false, error: 'Order is already completed.' })
 
@@ -237,7 +237,7 @@ export const completeOrder = async (req, res, next) => {
 export const advanceOrderStage = async (req, res, next) => {
   try {
     const { nextStage, consumedMaterials, note, extraUpdate } = req.body
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found.' })
 
     const prevStage = order.status
@@ -410,7 +410,7 @@ export const advanceOrderStage = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const archiveOrder = async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found.' })
 
     order.isArchived = true
@@ -436,7 +436,7 @@ export const archiveOrder = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const restoreOrder = async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found.' })
 
     order.isArchived = false
@@ -462,7 +462,7 @@ export const restoreOrder = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const deleteOrder = async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found.' })
     if (!order.isArchived) return res.status(400).json({ ok: false, error: 'Only archived orders can be permanently deleted.' })
 

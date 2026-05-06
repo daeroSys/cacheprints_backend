@@ -96,7 +96,7 @@ export const addMaterial = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateMaterial = async (req, res, next) => {
   try {
-    const material = await Material.findById(req.params.id)
+    const material = await Material.findOne({ _id: req.params.id })
     if (!material) return res.status(404).json({ ok: false, error: 'Material not found.' })
 
     const before = { name: material.name, category: material.category, costPerUnit: material.costPerUnit, minQty: material.minQty, maxQty: material.maxQty, leadTime: material.leadTime, reorderQuantity: material.reorderQuantity, link: material.link }
@@ -149,7 +149,7 @@ export const adjustStock = async (req, res, next) => {
     const { qty, reason } = req.body
     if (!reason?.trim()) return res.status(400).json({ ok: false, error: 'Reason is required for stock adjustment.' })
 
-    const material = await Material.findById(req.params.id)
+    const material = await Material.findOne({ _id: req.params.id })
     if (!material) return res.status(404).json({ ok: false, error: 'Material not found.' })
 
     const adjustment = Number(qty)
@@ -193,7 +193,7 @@ export const adjustStock = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const archiveMaterial = async (req, res, next) => {
   try {
-    const material = await Material.findById(req.params.id)
+    const material = await Material.findOne({ _id: req.params.id })
     if (!material) return res.status(404).json({ ok: false, error: 'Material not found.' })
 
     material.isArchived = true
@@ -219,7 +219,7 @@ export const archiveMaterial = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const restoreMaterial = async (req, res, next) => {
   try {
-    const material = await Material.findById(req.params.id)
+    const material = await Material.findOne({ _id: req.params.id })
     if (!material) return res.status(404).json({ ok: false, error: 'Material not found.' })
 
     material.isArchived = false
@@ -245,7 +245,7 @@ export const restoreMaterial = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const deleteMaterial = async (req, res, next) => {
   try {
-    const material = await Material.findById(req.params.id)
+    const material = await Material.findOne({ _id: req.params.id })
     if (!material) return res.status(404).json({ ok: false, error: 'Material not found.' })
     if (!material.isArchived) return res.status(400).json({ ok: false, error: 'Only archived materials can be permanently deleted.' })
 

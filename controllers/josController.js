@@ -186,7 +186,7 @@ export const createOrder = async (req, res, next) => {
 export const submitPaymentReceipt = async (req, res, next) => {
   try {
     const { paymentReceipt } = req.body
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
     order.paymentReceipt = paymentReceipt
@@ -343,7 +343,7 @@ export const getAdminOrders = async (req, res, next) => {
 export const uploadQR = async (req, res, next) => {
   try {
     const { qrCode, qrCodeLabel } = req.body
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
     order.qrCode = qrCode
@@ -359,7 +359,7 @@ export const uploadQR = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const approvePayment = async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
     // Update payment amounts (JOS uses 20% downpayment)
@@ -389,7 +389,7 @@ export const approvePayment = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const rejectPayment = async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
     order.paymentReceipt = null
@@ -406,7 +406,7 @@ export const rejectPayment = async (req, res, next) => {
 export const startProduction = async (req, res, next) => {
   try {
     const { finalDesignUrl } = req.body
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
     order.finalDesignUrl = finalDesignUrl
@@ -433,7 +433,7 @@ export const startProduction = async (req, res, next) => {
 export const uploadFinalPayment = async (req, res, next) => {
   try {
     const { finalPaymentReceipt } = req.body
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
     order.finalPaymentReceipt = finalPaymentReceipt
@@ -450,7 +450,7 @@ export const uploadFinalPayment = async (req, res, next) => {
 export const updateOrderStatus = async (req, res, next) => {
   try {
     const { status } = req.body
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({ _id: req.params.id })
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
     order.status = status
