@@ -59,6 +59,28 @@ const orderSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    customizationDetails: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    items: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    orderType: {
+      type: String,
+      enum: ['pickup', 'delivery'],
+      default: 'pickup',
+    },
+    shippingAddress: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
     fabricName: {
       type: String,
       trim: true,

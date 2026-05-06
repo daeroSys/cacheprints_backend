@@ -13,14 +13,9 @@ import materialRoutes from './routes/materialRoutes.js'
 import orderRoutes    from './routes/orderRoutes.js'
 import bomRoutes      from './routes/bomRoutes.js'
 import backupRoutes   from './routes/backupRoutes.js'
-import {
-  purchaseRouter,
-  transactionRouter,
-  activityLogRouter,
-  settingsRouter,
-  dashboardRouter,
-} from './routes/otherRoutes.js'
+import { dashboardRouter, settingsRouter, activityLogRouter, transactionRouter, purchaseRouter } from './routes/otherRoutes.js'
 import { startAutoBackup } from './controllers/backupController.js'
+import josRoutes from './routes/josRoutes.js'
 
 // ── Connect to MongoDB ────────────────────────────────────────────────────────
 connectDB()
@@ -53,6 +48,7 @@ app.use('/api/activity-log',      activityLogRouter)
 app.use('/api/settings',          settingsRouter)
 app.use('/api/dashboard',         dashboardRouter)
 app.use('/api/backups',           backupRoutes)
+app.use('/api/jos',               josRoutes)
 
 // ── 404 + Error Handlers ──────────────────────────────────────────────────────
 app.use(notFound)

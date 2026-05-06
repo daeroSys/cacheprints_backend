@@ -58,6 +58,15 @@ const productSchema = new mongoose.Schema(
       enum: ['Sleeveless Jersey', 'Tshirt Jersey', 'Shorts', 'Full Set', 'upper-only', 'lower-only', 'full-set'],
       default: 'Sleeveless Jersey',
     },
+    category: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    price: {
+      type: Number,
+      default: 0,
+    },
     bom: {
       type: [bomMaterialSchema],
       default: [],

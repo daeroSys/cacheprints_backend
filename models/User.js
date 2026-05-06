@@ -9,8 +9,8 @@ const userSchema = new mongoose.Schema(
   {
     username: {
       type: String,
-      required: [true, 'Username is required'],
       unique: true,
+      sparse: true, // allow null/missing values while keeping unique index
       trim: true,
       minlength: [3, 'Username must be at least 3 characters'],
       match: [/^[a-zA-Z0-9_]+$/, 'Only letters, numbers, and underscores allowed'],
@@ -40,8 +40,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['Admin', 'Staff'],
-      default: 'Staff',
+      enum: ['Admin', 'Staff', 'Customer'],
+      default: 'Customer',
     },
     approvedBy: {
       type: String, // username of the admin who approved

@@ -1,0 +1,210 @@
+import jwt from 'jsonwebtoken'
+import User from '../models/User.js'
+import Product from '../models/Product.js'
+import Order from '../models/Order.js'
+
+// ── Helper: generate JWT ──────────────────────────────────────────────────────
+const generateToken = (id) =>
+  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   POST /api/jos/auth/register
+// @desc    Register a new customer
+// ─────────────────────────────────────────────────────────────────────────────
+export const registerCustomer = async (req, res, next) => {
+  try {
+    const { email, password, name } = req.body
+
+    const userExists = await User.findOne({ email: email.toLowerCase() })
+    if (userExists) {
+      return res.status(400).json({ ok: false, error: 'Email already registered' })
+    }
+
+    const user = await User.create({
+      email: email.toLowerCase(),
+      password,
+      name,
+      role: 'Customer'
+    })
+
+    const token = generateToken(user._id)
+
+    res.status(201).json({
+      ok: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    })
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   POST /api/jos/auth/login
+// @desc    Login for customer
+// ─────────────────────────────────────────────────────────────────────────────
+export const loginCustomer = async (req, res, next) => {
+  try {
+    const { email, password } = req.body
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password')
+
+    if (!user || !(await user.matchPassword(password))) {
+      return res.status(401).json({ ok: false, error: 'Invalid email or password' })
+    }
+
+    if (user.role !== 'Customer') {
+       // Optional: Block staff from JOS login or allow them? 
+       // For now let's allow anyone but JOS frontend is for customers.
+    }
+
+    const token = generateToken(user._id)
+
+    res.json({
+      ok: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    })
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   GET /api/jos/products
+// @desc    Get all public products
+// ─────────────────────────────────────────────────────────────────────────────
+export const getProducts = async (req, res, next) => {
+  try {
+    const products = await Product.find({ isArchived: false })
+    res.json(products)
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   POST /api/jos/orders
+// @desc    Create a new job order from JOS
+// ─────────────────────────────────────────────────────────────────────────────
+export const createOrder = async (req, res, next) => {
+  try {
+    const { customerName, phoneNumber, orderType, shippingAddress, items, customizationDetails, totalPrice } = req.body
+    
+    // Generate an Order ID
+    const orderId = `ORD-${Date.now().toString().slice(-8).toUpperCase()}`
+
+    const order = await Order.create({
+      orderId,
+      customer: customerName,
+      contact: phoneNumber,
+      orderType,
+      shippingAddress,
+      items,
+      customizationDetails,
+      totalAmount: totalPrice,
+      user: req.user ? req.user._id : null,
+      status: 'Order Received',
+      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default 7 days deadline
+    })
+
+    res.status(201).json({ ok: true, order })
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   GET /api/jos/my-orders
+// @desc    Get orders for logged in customer
+// ─────────────────────────────────────────────────────────────────────────────
+export const getCustomerOrders = async (req, res, next) => {
+  try {
+    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 })
+    res.json(orders)
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   POST /api/jos/products
+// @desc    Add a new product (Admin)
+// ─────────────────────────────────────────────────────────────────────────────
+export const addProduct = async (req, res, next) => {
+  try {
+    const { name, category, price, description, image } = req.body
+    
+    // Generate a Product ID
+    const productId = `PRD-${Date.now().toString().slice(-8).toUpperCase()}`
+
+    const product = await Product.create({
+      productId,
+      name,
+      category,
+      price,
+      description,
+      image // image is base64 in JOS
+    })
+
+    res.status(201).json(product)
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/products/:id
+// @desc    Update a product (Admin)
+// ─────────────────────────────────────────────────────────────────────────────
+export const updateProduct = async (req, res, next) => {
+  try {
+    const { name, category, price, description, image } = req.body
+    const product = await Product.findById(req.params.id)
+
+    if (!product) {
+      return res.status(404).json({ ok: false, error: 'Product not found' })
+    }
+
+    product.name = name || product.name
+    product.category = category || product.category
+    product.price = price !== undefined ? price : product.price
+    product.description = description || product.description
+    if (image) product.image = image
+
+    await product.save()
+    res.json(product)
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   DELETE /api/jos/products/:id
+// @desc    Delete a product (Admin)
+// ─────────────────────────────────────────────────────────────────────────────
+export const deleteProduct = async (req, res, next) => {
+  try {
+    const product = await Product.findById(req.params.id)
+    if (!product) {
+      return res.status(404).json({ ok: false, error: 'Product not found' })
+    }
+    
+    // Hard delete or archive? JOS uses hard delete in its original code.
+    // Let's archive to be safe, but JOS frontend expects delete.
+    await product.deleteOne()
+    res.json({ ok: true, message: 'Product deleted' })
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/profile
+// @desc    Update customer profile
+// ─────────────────────────────────────────────────────────────────────────────
+export const updateCustomerProfile = async (req, res, next) => {
+  try {
+    const { name, contact } = req.body
+    const user = await User.findById(req.user._id)
+    
+    user.name = name || user.name
+    user.contact = contact || user.contact
+    await user.save()
+
+    res.json({ ok: true, user: { id: user._id, name: user.name, email: user.email, contact: user.contact } })
+  } catch (err) { next(err) }
+}
