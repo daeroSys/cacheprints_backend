@@ -10,7 +10,13 @@ import {
   getCustomerOrders,
   updateCustomerProfile,
   getAdminStats,
-  getAdminOrders
+  getAdminOrders,
+  uploadQR,
+  approvePayment,
+  rejectPayment,
+  startProduction,
+  uploadFinalPayment,
+  updateOrderStatus
 } from '../controllers/josController.js'
 import { protect, adminOnly } from '../middleware/auth.js'
 
@@ -33,6 +39,12 @@ router.get('/my-orders', protect, getCustomerOrders)
 // Admin
 router.get('/admin/stats', protect, adminOnly, getAdminStats)
 router.get('/admin/orders', protect, adminOnly, getAdminOrders)
+router.put('/admin/orders/:id/upload-qr', protect, adminOnly, uploadQR)
+router.put('/admin/orders/:id/approve-payment', protect, adminOnly, approvePayment)
+router.put('/admin/orders/:id/reject-payment', protect, adminOnly, rejectPayment)
+router.put('/admin/orders/:id/start-production', protect, adminOnly, startProduction)
+router.put('/admin/orders/:id/upload-final-payment', protect, adminOnly, uploadFinalPayment)
+router.put('/admin/orders/:id/status', protect, adminOnly, updateOrderStatus)
 
 // Profile
 router.put('/profile', protect, updateCustomerProfile)

@@ -305,3 +305,101 @@ export const getAdminOrders = async (req, res, next) => {
     res.json(mappedOrders)
   } catch (err) { next(err) }
 }
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/admin/orders/:id/upload-qr
+// ─────────────────────────────────────────────────────────────────────────────
+export const uploadQR = async (req, res, next) => {
+  try {
+    const { qrCode, qrCodeLabel } = req.body
+    const order = await Order.findById(req.params.id)
+    if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
+    
+    order.qrCode = qrCode
+    order.qrCodeLabel = qrCodeLabel
+    await order.save()
+    
+    res.json({ ok: true, order })
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/admin/orders/:id/approve-payment
+// ─────────────────────────────────────────────────────────────────────────────
+export const approvePayment = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id)
+    if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
+    
+    order.status = 'paid'
+    order.payment = 'Paid' // Sync with IMS
+    await order.save()
+    
+    res.json({ ok: true, order })
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/admin/orders/:id/reject-payment
+// ─────────────────────────────────────────────────────────────────────────────
+export const rejectPayment = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id)
+    if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
+    
+    order.paymentReceipt = null
+    order.status = 'pending-payment'
+    await order.save()
+    
+    res.json({ ok: true, order })
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/admin/orders/:id/start-production
+// ─────────────────────────────────────────────────────────────────────────────
+export const startProduction = async (req, res, next) => {
+  try {
+    const { finalDesignUrl } = req.body
+    const order = await Order.findById(req.params.id)
+    if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
+    
+    order.finalDesignUrl = finalDesignUrl
+    order.status = 'in-production'
+    await order.save()
+    
+    res.json({ ok: true, order })
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/admin/orders/:id/upload-final-payment
+// ─────────────────────────────────────────────────────────────────────────────
+export const uploadFinalPayment = async (req, res, next) => {
+  try {
+    const { finalPaymentReceipt } = req.body
+    const order = await Order.findById(req.params.id)
+    if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
+    
+    order.finalPaymentReceipt = finalPaymentReceipt
+    order.finalPaymentReceiptDate = new Date()
+    await order.save()
+    
+    res.json({ ok: true, order })
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/admin/orders/:id/status
+// ─────────────────────────────────────────────────────────────────────────────
+export const updateOrderStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body
+    const order = await Order.findById(req.params.id)
+    if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
+    
+    order.status = status
+    await order.save()
+    
+    res.json({ ok: true, order })
+  } catch (err) { next(err) }
+}
