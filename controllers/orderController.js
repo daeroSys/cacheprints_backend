@@ -541,8 +541,8 @@ export const syncExternalOrder = async (req, res, next) => {
       upperSize: player.size || player.variant || 'M',
       addOn: player.addOn?.name || player.addOns?.[0]?.name || (typeof player.addOn === 'string' ? player.addOn : ''),
       addOnPrice: player.addOn?.price || player.addOns?.[0]?.price || 0,
-      lowerType: '',
-      lowerSize: ''
+      lowerType: productType,
+      lowerSize: player.size || player.variant || 'M'
     }));
 
     const designStr = [

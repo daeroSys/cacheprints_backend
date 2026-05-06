@@ -123,6 +123,8 @@ export const createOrder = async (req, res, next) => {
     // Generate an Order ID
     const orderId = `ORD-${Date.now().toString().slice(-8).toUpperCase()}`
 
+    const apparelType = customizationDetails?.apparelType || ''
+
     // Map customizationDetails to IMS structure
     const rows = (customizationDetails?.lineup || []).map(player => ({
       id: player.id,
@@ -130,6 +132,8 @@ export const createOrder = async (req, res, next) => {
       surname: player.surname,
       no: player.jerseyNumber,
       jerseyNumber: player.jerseyNumber,
+      upperType: apparelType, // Set the product type chosen by customer
+      lowerType: apparelType,
       upperSize: player.size,
       lowerSize: player.size,
       size: player.size,
@@ -149,13 +153,16 @@ export const createOrder = async (req, res, next) => {
       customizationDetails,
       totalAmount: totalPrice,
       totalPrice,
+      paidAmount: 0,
       user: req.user ? req.user._id : null,
-      status: 'pending', // Use 'pending' for JOS to trigger admin Accept/Reject
+      status: 'Order Received', // Align with IMS starting status
+      productionPhase: 'Order Received',
       deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days deadline
       
       // IMS Mappings
       rows,
-      design: customizationDetails?.customText || customizationDetails?.apparelType || '',
+      design: customizationDetails?.customText || apparelType || '',
+      productType: apparelType,
       fabricName: customizationDetails?.fabricName || '',
       cmyk: customizationDetails?.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 },
       upperPrice: customizationDetails?.productPrice || 450,
@@ -348,8 +355,13 @@ export const approvePayment = async (req, res, next) => {
     const order = await Order.findById(req.params.id)
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
-    order.status = 'paid'
-    order.payment = 'Paid' // Sync with IMS
+    // Update payment amounts (JOS uses 20% downpayment)
+    const downpayment = order.totalAmount * 0.20
+    order.paidAmount = downpayment
+    
+    order.status = 'Designing' // Next step after payment
+    order.productionPhase = 'Designing'
+    order.payment = 'Partial' // IMS status
     await order.save()
     
     res.json({ ok: true, order })
@@ -382,7 +394,8 @@ export const startProduction = async (req, res, next) => {
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
     order.finalDesignUrl = finalDesignUrl
-    order.status = 'in-production'
+    order.status = 'Printing'
+    order.productionPhase = 'Printing' 
     await order.save()
     
     res.json({ ok: true, order })
