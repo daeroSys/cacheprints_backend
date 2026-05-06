@@ -35,12 +35,14 @@ const bomMaterialSchema = new mongoose.Schema(
 
 const productSchema = new mongoose.Schema(
   {
+    _id: {
+      type: mongoose.Schema.Types.Mixed,
+      default: () => new mongoose.Types.ObjectId().toString(),
+    },
     productId: {
       type: String,
-      required: true,
-      unique: true,
       trim: true,
-      // Format: PRD-XXXXXXXX
+      // Optional for JOS
     },
     name: {
       type: String,
@@ -54,8 +56,6 @@ const productSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      required: true,
-      enum: ['Sleeveless Jersey', 'Tshirt Jersey', 'Shorts', 'Full Set', 'upper-only', 'lower-only', 'full-set'],
       default: 'Sleeveless Jersey',
     },
     category: {
@@ -77,13 +77,11 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0,
-      // Price per piece for jersey/shirt (used when type != lower-only)
     },
     lowerPrice: {
       type: Number,
       default: 0,
       min: 0,
-      // Price per piece for shorts/pants (used when type != upper-only)
     },
     bannerAvailable: {
       type: Boolean,
@@ -103,7 +101,15 @@ const productSchema = new mongoose.Schema(
 
     // ── Image ──────────────────────────────────────────────────────────────────
     image: {
-      type: String, // base64 data URI (max ~500KB)
+      type: String, // base64 data URI
+      default: null,
+    },
+    imageBase64: {
+      type: String, // JOS alias for image
+      default: null,
+    },
+    imageUrl: {
+      type: String, // Additional field for cloud storage
       default: null,
     },
 

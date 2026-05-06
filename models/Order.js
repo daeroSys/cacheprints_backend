@@ -9,12 +9,16 @@ const orderRowSchema = new mongoose.Schema(
   {
     no: { type: String, default: '' },          // jersey number e.g. "10"
     name: { type: String, default: '' },         // player name
-    upperType: { type: String, default: '' },    // T-Shirt, Jersey, Long-sleeved Jersey, etc.
-    upperSize: { type: String, default: '' },    // XS, S, M, L, XL, XXL
-    addOn: { type: String, default: '' },        // Add-Ons like 'Pocket'
+    surname: { type: String, default: '' },      // JOS alias for name
+    jerseyNumber: { type: String, default: '' }, // JOS alias for no
+    upperType: { type: String, default: '' },
+    upperSize: { type: String, default: '' },
+    lowerType: { type: String, default: '' },
+    lowerSize: { type: String, default: '' },
+    size: { type: String, default: '' },         // JOS alias for upperSize/lowerSize
+    id: { type: String, default: '' },           // JOS player ID
+    addOn: { type: mongoose.Schema.Types.Mixed, default: '' }, // JOS has it as object
     addOnPrice: { type: Number, default: 0 },
-    lowerType: { type: String, default: '' },    // Jersey Short, Jogging Pants
-    lowerSize: { type: String, default: '' },    // XS, S, M, L, XL, XXL
   },
   { _id: false }
 )
@@ -32,17 +36,31 @@ const designFileSchema = new mongoose.Schema(
 
 const orderSchema = new mongoose.Schema(
   {
+    _id: {
+      type: mongoose.Schema.Types.Mixed,
+      default: () => new mongoose.Types.ObjectId().toString(),
+    },
     orderId: {
       type: String,
-      required: true,
-      unique: true,
       trim: true,
-      // Format: ORD-XXXXXXXX
+      // Optional for JOS, Required for IMS
+    },
+    userId: {
+      type: String, // Firebase UID reference for JOS
+      trim: true,
     },
     customer: {
       type: String,
-      required: [true, 'Customer name is required'],
       trim: true,
+    },
+    customerName: {
+      type: String, // JOS alias for customer
+      trim: true,
+    },
+    customerEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
     },
     teamName: {
       type: String,
@@ -74,7 +92,6 @@ const orderSchema = new mongoose.Schema(
     },
     orderType: {
       type: String,
-      enum: ['pickup', 'delivery'],
       default: 'pickup',
     },
     shippingAddress: {
@@ -91,11 +108,14 @@ const orderSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    phoneNumber: {
+      type: String, // JOS alias for contact
+      trim: true,
+    },
     design: {
       type: String,
       trim: true,
       default: '',
-      // e.g. "Home Kit – Red & White Stripes"
     },
     cmyk: {
       c: { type: Number, default: 0.25 },
@@ -125,7 +145,11 @@ const orderSchema = new mongoose.Schema(
     // ── Amounts ────────────────────────────────────────────────────────────────
     totalAmount: {
       type: Number,
-      required: true,
+      min: 0,
+      default: 0,
+    },
+    totalPrice: {
+      type: Number, // JOS alias for totalAmount
       min: 0,
       default: 0,
     },
@@ -136,36 +160,38 @@ const orderSchema = new mongoose.Schema(
     },
     payment: {
       type: String,
-      enum: ['Paid', 'Partial', 'Unpaid'],
       default: 'Unpaid',
     },
 
     // ── Production ─────────────────────────────────────────────────────────────
     status: {
       type: String,
-      enum: [
-        'Order Received',
-        'Designing',
-        'Printing',
-        'Heat Press',
-        'Sewing',
-        'Quality Check',
-        'Ready for Pickup',
-        'Completed',
-      ],
-
       default: 'Order Received',
+    },
+    productionPhase: {
+      type: String, // JOS specific
+      default: null,
     },
     deadline: {
       type: Date,
-      required: [true, 'Deadline is required'],
     },
     notes: {
       type: String,
       default: '',
     },
 
-    // ── Design Files ───────────────────────────────────────────────────────────
+    // ── JOS Specific Fields ───────────────────────────────────────────────────
+    finalDesignUrl: { type: String, default: null },
+    qrCode: { type: String, default: null },
+    qrCodeLabel: { type: String, default: null },
+    paymentReceipt: { type: String, default: null },
+    paymentReceiptDate: { type: Date, default: null },
+    finalPaymentReceipt: { type: String, default: null },
+    finalPaymentReceiptDate: { type: Date, default: null },
+    lastMessageAt: { type: Date, default: null },
+    unreadMessages: { type: Boolean, default: false },
+
+    // ── Design Files (IMS) ────────────────────────────────────────────────────
     designFiles: {
       type: [designFileSchema],
       default: [],
@@ -199,7 +225,7 @@ const orderSchema = new mongoose.Schema(
       default: null,
     },
 
-    // ── Created by ─────────────────────────────────────────────────────────────
+    // ── Inventory/IMS specific ────────────────────────────────────────────────
     coverageFactor: {
       type: Number,
       default: 0.25, // default 25%

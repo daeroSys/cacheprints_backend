@@ -110,18 +110,42 @@ export const createOrder = async (req, res, next) => {
     // Generate an Order ID
     const orderId = `ORD-${Date.now().toString().slice(-8).toUpperCase()}`
 
+    // Map customizationDetails to IMS structure
+    const rows = (customizationDetails?.lineup || []).map(player => ({
+      id: player.id,
+      name: player.surname,
+      surname: player.surname,
+      no: player.jerseyNumber,
+      jerseyNumber: player.jerseyNumber,
+      upperSize: player.size,
+      lowerSize: player.size,
+      size: player.size,
+      addOn: player.addOn
+    }))
+
     const order = await Order.create({
       orderId,
       customer: customerName,
+      customerName,
       contact: phoneNumber,
+      phoneNumber,
       orderType,
       shippingAddress,
       items,
       customizationDetails,
       totalAmount: totalPrice,
+      totalPrice,
       user: req.user ? req.user._id : null,
       status: 'Order Received',
-      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default 7 days deadline
+      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days deadline
+      
+      // IMS Mappings
+      rows,
+      design: customizationDetails?.customText || customizationDetails?.apparelType || '',
+      fabricName: customizationDetails?.fabricName || '',
+      cmyk: customizationDetails?.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 },
+      upperPrice: customizationDetails?.productPrice || 450,
+      lowerPrice: customizationDetails?.productPrice || 450
     })
 
     res.status(201).json({ ok: true, order })

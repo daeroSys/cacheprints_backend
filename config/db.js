@@ -15,7 +15,7 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 10000, 
       // If you are seeing "certificate validation failed", you can temporarily 
       // uncomment the line below to bypass SSL checks (INSECURE - DEBUG ONLY)
-      // tlsAllowInvalidCertificates: true, 
+      tlsAllowInvalidCertificates: true, 
     })
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`)
     console.log(`📦 Database: ${conn.connection.name}`)

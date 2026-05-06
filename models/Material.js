@@ -6,6 +6,10 @@ import mongoose from 'mongoose'
 
 const materialSchema = new mongoose.Schema(
   {
+    _id: {
+      type: mongoose.Schema.Types.Mixed,
+      default: () => new mongoose.Types.ObjectId().toString(),
+    },
     materialId: {
       type: String,
       unique: true,
@@ -25,7 +29,6 @@ const materialSchema = new mongoose.Schema(
     unit: {
       type: String,
       required: true,
-      enum: ['pcs', 'meters', 'ml', 'liters', 'sheets', 'spools', 'kg', 'grams'],
       default: 'pcs',
     },
     quantity: {
