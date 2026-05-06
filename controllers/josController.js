@@ -167,6 +167,24 @@ export const createOrder = async (req, res, next) => {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/orders/:id/payment-receipt
+// ─────────────────────────────────────────────────────────────────────────────
+export const submitPaymentReceipt = async (req, res, next) => {
+  try {
+    const { paymentReceipt } = req.body
+    const order = await Order.findById(req.params.id)
+    if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
+    
+    order.paymentReceipt = paymentReceipt
+    order.paymentReceiptDate = new Date()
+    await order.save()
+    
+    res.json({ ok: true, order })
+  } catch (err) { next(err) }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // @route   GET /api/jos/my-orders
 // @desc    Get orders for logged in customer
 // ─────────────────────────────────────────────────────────────────────────────

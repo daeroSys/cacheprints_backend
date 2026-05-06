@@ -7,6 +7,7 @@ import {
   updateProduct,
   deleteProduct,
   createOrder,
+  submitPaymentReceipt,
   getCustomerOrders,
   updateCustomerProfile,
   getAdminStats,
@@ -35,6 +36,7 @@ router.delete('/products/:id', protect, adminOnly, deleteProduct)
 // Orders
 router.post('/orders', protect, createOrder)
 router.get('/my-orders', protect, getCustomerOrders)
+router.put('/orders/:id/payment-receipt', protect, submitPaymentReceipt)
 
 // Admin
 router.get('/admin/stats', protect, adminOnly, getAdminStats)
