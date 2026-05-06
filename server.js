@@ -75,7 +75,7 @@ app.use(cors({
   },
   credentials: true,
 }))
-app.use(express.json({ limit: '10mb' }))   // 10mb for base64 receipt/product images
+app.use(express.json({ limit: '50mb' }))   // Accommodate high-res designs and base64 overhead
 app.use(express.urlencoded({ extended: true }))
 
 // ── Health check ──────────────────────────────────────────────────────────────
