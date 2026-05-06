@@ -213,3 +213,48 @@ export const updateCustomerProfile = async (req, res, next) => {
     res.json({ ok: true, user: { id: user._id, name: user.name, email: user.email, contact: user.contact, phone: user.phone } })
   } catch (err) { next(err) }
 }
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   GET /api/jos/admin/stats
+// @desc    Get dashboard stats for JOS admin
+// ─────────────────────────────────────────────────────────────────────────────
+export const getAdminStats = async (req, res, next) => {
+  try {
+    const totalOrders = await Order.countDocuments({ isArchived: false })
+    const pendingOrders = await Order.countDocuments({ isArchived: false, status: { $nin: ['completed', 'rejected'] } })
+    const completedOrders = await Order.countDocuments({ isArchived: false, status: 'completed' })
+    
+    const allOrders = await Order.find({ isArchived: false })
+    const totalRevenue = allOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0)
+
+    res.json({
+      totalOrders,
+      pendingOrders,
+      completedOrders,
+      totalRevenue
+    })
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   GET /api/jos/admin/orders
+// @desc    Get recent orders for JOS admin dashboard
+// ─────────────────────────────────────────────────────────────────────────────
+export const getAdminOrders = async (req, res, next) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : null
+    let query = Order.find({ isArchived: false }).sort({ createdAt: -1 })
+    if (limit) query = query.limit(limit)
+    
+    const orders = await query;
+    
+    // Map _id to id for JOS frontend
+    const mappedOrders = orders.map(o => ({
+      ...o.toObject(),
+      id: o._id,
+      customerName: o.customer, // JOS frontend expects customerName
+      totalPrice: o.totalAmount // JOS frontend expects totalPrice
+    }))
+
+    res.json(mappedOrders)
+  } catch (err) { next(err) }
+}

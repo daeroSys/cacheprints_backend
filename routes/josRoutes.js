@@ -8,7 +8,9 @@ import {
   deleteProduct,
   createOrder,
   getCustomerOrders,
-  updateCustomerProfile
+  updateCustomerProfile,
+  getAdminStats,
+  getAdminOrders
 } from '../controllers/josController.js'
 import { protect, adminOnly } from '../middleware/auth.js'
 
@@ -27,6 +29,10 @@ router.delete('/products/:id', protect, adminOnly, deleteProduct)
 // Orders
 router.post('/orders', protect, createOrder)
 router.get('/my-orders', protect, getCustomerOrders)
+
+// Admin
+router.get('/admin/stats', protect, adminOnly, getAdminStats)
+router.get('/admin/orders', protect, adminOnly, getAdminOrders)
 
 // Profile
 router.put('/profile', protect, updateCustomerProfile)

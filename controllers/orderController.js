@@ -144,7 +144,7 @@ export const updateOrder = async (req, res, next) => {
     const { customer, contact, design, deadline, status, paidAmount, notes, rows, upperPrice, lowerPrice, totalAmount, designFiles, designFileUrl, designFileName } = req.body
 
     // Staff can only update paidAmount and notes
-    if (req.user.role === 'Admin') {
+    if (req.user.role?.toLowerCase() === 'admin') {
       if (customer)   order.customer   = customer.trim()
       if (contact)    order.contact    = contact.trim()
       if (design)     order.design     = design.trim()
