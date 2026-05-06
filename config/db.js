@@ -11,13 +11,19 @@ const connectDB = async () => {
     console.warn('⚠️ MONGODB_URI NOT detected. Falling back to localhost!')
   }
   try {
-    const conn = await mongoose.connect(MONGODB_URI)
+    const conn = await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000, 
+      // If you are seeing "certificate validation failed", you can temporarily 
+      // uncomment the line below to bypass SSL checks (INSECURE - DEBUG ONLY)
+      // tlsAllowInvalidCertificates: true, 
+    })
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`)
     console.log(`📦 Database: ${conn.connection.name}`)
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`)
-    // We don't exit here so the server can at least respond with errors 
-    // instead of crashing and causing "fake" CORS issues.
+    if (error.message.includes('certificate')) {
+      console.error('💡 HINT: This looks like an SSL/Certificate issue. Check your connection string and Atlas whitelisting.')
+    }
   }
 }
 

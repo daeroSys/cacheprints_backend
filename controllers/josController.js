@@ -53,7 +53,13 @@ export const loginCustomer = async (req, res, next) => {
     const { email, password } = req.body
     const user = await User.findOne({ email: email.toLowerCase() }).select('+password')
 
-    if (!user || !(await user.matchPassword(password))) {
+    if (!user) {
+      console.warn(`[JOS] Failed login attempt: User not found (${email})`)
+      return res.status(401).json({ ok: false, error: 'Invalid email or password' })
+    }
+    
+    if (!(await user.matchPassword(password))) {
+      console.warn(`[JOS] Failed login attempt: Incorrect password for ${email}`)
       return res.status(401).json({ ok: false, error: 'Invalid email or password' })
     }
 
@@ -87,7 +93,10 @@ export const getProducts = async (req, res, next) => {
   try {
     const products = await Product.find({ isArchived: { $ne: true } })
     res.json(products)
-  } catch (err) { next(err) }
+  } catch (err) { 
+    console.error(`[JOS] getProducts Error: ${err.message}`)
+    next(err) 
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

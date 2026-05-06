@@ -13,24 +13,35 @@ export const protect = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    let decoded
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET)
+    } catch (err) {
+      console.error(`[AUTH] Token Verification Error: ${err.message}`)
+      return res.status(401).json({ ok: false, error: 'Not authorized. Invalid token.' })
+    }
 
     // Attach user (without password) to request
-    // Since _id can be String or ObjectId, we try finding by decoded.id first,
-    // and if not found and it's a valid ObjectId hex, we try as ObjectId.
-    let user = await User.findById(decoded.id).select('-password')
-    if (!user && mongoose.Types.ObjectId.isValid(decoded.id)) {
-      user = await User.findOne({ _id: new mongoose.Types.ObjectId(decoded.id) }).select('-password')
+    let user
+    try {
+      user = await User.findById(decoded.id).select('-password')
+      if (!user && mongoose.Types.ObjectId.isValid(decoded.id)) {
+        user = await User.findOne({ _id: new mongoose.Types.ObjectId(decoded.id) }).select('-password')
+      }
+    } catch (dbErr) {
+      console.error(`[AUTH] Database Error during protection: ${dbErr.message}`)
+      return next(dbErr) // Pass to global error handler (500)
     }
 
     if (!user || user.isArchived) {
+      console.warn(`[AUTH] Protection failed: User not found or archived. ID: ${decoded.id}`)
       return res.status(401).json({ ok: false, error: 'User no longer exists or is archived.' })
     }
     req.user = user
 
     next()
   } catch (err) {
-    return res.status(401).json({ ok: false, error: 'Not authorized. Invalid token.' })
+    next(err)
   }
 }
 

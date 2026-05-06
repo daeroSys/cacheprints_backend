@@ -40,8 +40,10 @@ export const login = async (req, res, next) => {
       return res.status(401).json({ ok: false, error: 'This account has been archived. Contact your administrator.' })
 
     const isMatch = await user.matchPassword(password)
-    if (!isMatch)
+    if (!isMatch) {
+      console.warn(`[AUTH] Failed login attempt for user: ${username} (Incorrect Password)`)
       return res.status(401).json({ ok: false, error: 'Invalid username or password.' })
+    }
 
     const token = generateToken(user._id)
 
