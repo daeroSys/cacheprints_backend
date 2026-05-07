@@ -22,32 +22,48 @@ export const registerCustomer = async (req, res, next) => {
   try {
     const { email, password, name } = req.body
 
+    if (!email || !password || !name) {
+      return res.status(400).json({ ok: false, error: 'Please provide name, email, and password' })
+    }
+
     const userExists = await User.findOne({ email: email.toLowerCase() })
     if (userExists) {
       return res.status(400).json({ ok: false, error: 'Email already registered' })
     }
 
-    const user = await User.create({
-      email: email.toLowerCase(),
-      password,
-      name,
-      role: 'Customer'
-    })
+    try {
+      const user = await User.create({
+        email: email.toLowerCase(),
+        password,
+        name,
+        role: 'Customer'
+      })
 
-    const token = generateToken(user._id)
+      const token = generateToken(user._id)
 
-    res.status(201).json({
-      ok: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        contact: user.contact,
-        phone: user.phone
+      res.status(201).json({
+        ok: true,
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          contact: user.contact,
+          phone: user.phone
+        }
+      })
+    } catch (createErr) {
+      // Catch Mongoose validation or duplicate key errors
+      if (createErr.name === 'ValidationError') {
+        const message = Object.values(createErr.errors).map(val => val.message).join(', ')
+        return res.status(400).json({ ok: false, error: message })
       }
-    })
+      if (createErr.code === 11000) {
+        return res.status(400).json({ ok: false, error: 'Account details already in use (email or username)' })
+      }
+      throw createErr
+    }
   } catch (err) { next(err) }
 }
 
