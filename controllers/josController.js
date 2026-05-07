@@ -185,7 +185,7 @@ export const createOrder = async (req, res, next) => {
       
       // IMS Mappings
       rows,
-      design: customizationDetails?.customText || apparelType || '',
+      design: `Primary: ${customizationDetails?.primaryColor || 'N/A'} | Fabric: ${customizationDetails?.fabricName || 'N/A'}`,
       productType: apparelType,
       fabricName: customizationDetails?.fabricName || '',
       cmyk: customizationDetails?.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 },
