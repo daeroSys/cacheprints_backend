@@ -17,6 +17,7 @@ import backupRoutes   from './routes/backupRoutes.js'
 import { dashboardRouter, settingsRouter, activityLogRouter, transactionRouter, purchaseRouter } from './routes/otherRoutes.js'
 import { startAutoBackup } from './controllers/backupController.js'
 import josRoutes from './routes/josRoutes.js'
+import messageRoutes from './routes/messageRoutes.js'
 
 // ── Connect to MongoDB ────────────────────────────────────────────────────────
 console.log('⏳ Attempting to connect to MongoDB...')
@@ -96,6 +97,7 @@ app.use('/api/settings',          settingsRouter)
 app.use('/api/dashboard',         dashboardRouter)
 app.use('/api/backups',           backupRoutes)
 app.use('/api/jos',               josRoutes)
+app.use('/api/messages',          messageRoutes)
 
 // ── 404 + Error Handlers ──────────────────────────────────────────────────────
 app.use(notFound)
