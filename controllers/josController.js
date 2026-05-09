@@ -197,7 +197,14 @@ export const createOrder = async (req, res, next) => {
       fabricName: customizationDetails?.fabricName || '',
       cmyk: customizationDetails?.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 },
       upperPrice: customizationDetails?.productPrice || 450,
-      lowerPrice: customizationDetails?.productPrice || 450
+      lowerPrice: customizationDetails?.productPrice || 450,
+      designFiles: customizationDetails?.logoImage ? [{
+        fileId: `df-logo-${Date.now()}`,
+        name: 'Customer Logo',
+        url: customizationDetails.logoImage,
+        notes: 'Automatically attached from JOS customization.',
+        uploadedAt: new Date()
+      }] : []
     })
 
     res.status(201).json({ ok: true, order })
