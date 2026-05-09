@@ -248,12 +248,12 @@ export const cancelOrder = async (req, res, next) => {
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
     // Optional: Add logic to prevent cancelling if order is past certain stages
-    const nonCancellableStatuses = ['completed', 'rejected', 'for-shipping']
+    const nonCancellableStatuses = ['completed', 'rejected', 'cancelled', 'for-shipping']
     if (nonCancellableStatuses.includes(order.status)) {
       return res.status(400).json({ ok: false, error: `Order cannot be cancelled because it is already ${order.status}` })
     }
 
-    order.status = 'rejected' // Using rejected as the frontend cancellation status
+    order.status = 'cancelled' // Using cancelled as the frontend cancellation status
     order.cancellationReason = cancellationReason || 'Cancelled by customer'
     order.cancelledAt = new Date()
     await order.save()
