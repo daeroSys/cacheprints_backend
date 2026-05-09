@@ -234,6 +234,14 @@ const orderSchema = new mongoose.Schema(
       type: String, // username
       default: '',
     },
+    cancellationReason: {
+      type: String,
+      default: null,
+    },
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },

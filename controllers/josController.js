@@ -233,6 +233,36 @@ export const submitPaymentReceipt = async (req, res, next) => {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/orders/:id/cancel
+// @desc    Cancel an order from JOS
+// ─────────────────────────────────────────────────────────────────────────────
+export const cancelOrder = async (req, res, next) => {
+  try {
+    const { cancellationReason } = req.body
+    let order = await Order.findOne({ _id: req.params.id })
+    
+    if (!order && mongoose.Types.ObjectId.isValid(req.params.id)) {
+      order = await Order.findOne({ _id: new mongoose.Types.ObjectId(req.params.id) })
+    }
+    
+    if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
+    
+    // Optional: Add logic to prevent cancelling if order is past certain stages
+    const nonCancellableStatuses = ['completed', 'rejected', 'for-shipping']
+    if (nonCancellableStatuses.includes(order.status)) {
+      return res.status(400).json({ ok: false, error: `Order cannot be cancelled because it is already ${order.status}` })
+    }
+
+    order.status = 'rejected' // Using rejected as the frontend cancellation status
+    order.cancellationReason = cancellationReason || 'Cancelled by customer'
+    order.cancelledAt = new Date()
+    await order.save()
+    
+    res.json({ ok: true, order })
+  } catch (err) { next(err) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // @route   GET /api/jos/my-orders
 // @desc    Get orders for logged in customer
 // ─────────────────────────────────────────────────────────────────────────────
