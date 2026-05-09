@@ -407,8 +407,8 @@ export const approvePayment = async (req, res, next) => {
     }
     if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
     
-    // Update payment amounts (JOS uses 20% downpayment)
-    const downpayment = order.totalAmount * 0.20
+    // Update payment amounts (Standardized ₱500 design fee/downpayment)
+    const downpayment = 500
     order.paidAmount = downpayment
     
     order.status = 'Designing' // Next step after payment
