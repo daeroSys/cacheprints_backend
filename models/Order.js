@@ -204,6 +204,14 @@ const orderSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    cancellationReason: {
+      type: String,
+      default: '',
+    },
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
 
     // ── Completion ─────────────────────────────────────────────────────────────
     isCompleted: {

@@ -501,3 +501,49 @@ export const updateOrderStatus = async (req, res, next) => {
     res.json({ ok: true, order })
   } catch (err) { next(err) }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/orders/:id/cancel
+// ─────────────────────────────────────────────────────────────────────────────
+export const cancelOrder = async (req, res, next) => {
+  try {
+    const { cancellationReason } = req.body
+    let order = await Order.findOne({ _id: req.params.id })
+    if (!order && mongoose.Types.ObjectId.isValid(req.params.id)) {
+      order = await Order.findOne({ _id: new mongoose.Types.ObjectId(req.params.id) })
+    }
+    if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
+
+    // Business Logic: 
+    // If cancel happens after 500 is paid, don't remove it from revenue.
+    // If cancel happens before 500 is paid, remove it from revenue.
+    const wasFeePaid = order.paidAmount >= 500
+
+    order.status = 'cancelled'
+    order.cancellationReason = cancellationReason || 'No reason provided'
+    order.cancelledAt = new Date()
+
+    if (wasFeePaid) {
+      // Retain 500 as revenue (Design Fee)
+      order.totalAmount = 500
+      order.totalPrice = 500
+    } else {
+      // Remove from revenue
+      order.totalAmount = 0
+      order.totalPrice = 0
+    }
+
+    await order.save()
+
+    await logActivity({
+      action: 'Order Cancelled',
+      detail: `Order ${order.orderId} was cancelled. Reason: ${order.cancellationReason}. Revenue retained: ${wasFeePaid ? '500' : '0'}.`,
+      user: req.user ? (req.user.username || req.user.name) : 'Customer',
+      entityType: 'Order',
+      entityId: order.orderId,
+      changes: { status: { from: 'previous', to: 'cancelled' }, totalAmount: { to: order.totalAmount } }
+    })
+
+    res.json({ ok: true, order })
+  } catch (err) { next(err) }
+}

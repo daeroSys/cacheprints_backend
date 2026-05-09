@@ -17,7 +17,8 @@ import {
   rejectPayment,
   startProduction,
   uploadFinalPayment,
-  updateOrderStatus
+  updateOrderStatus,
+  cancelOrder
 } from '../controllers/josController.js'
 import { protect, adminOnly } from '../middleware/auth.js'
 
@@ -37,6 +38,7 @@ router.delete('/products/:id', protect, adminOnly, deleteProduct)
 router.post('/orders', protect, createOrder)
 router.get('/my-orders', protect, getCustomerOrders)
 router.put('/orders/:id/payment-receipt', protect, submitPaymentReceipt)
+router.put('/orders/:id/cancel', protect, cancelOrder)
 
 // Admin
 router.get('/admin/stats', protect, adminOnly, getAdminStats)
