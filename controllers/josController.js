@@ -119,7 +119,14 @@ export const loginCustomer = async (req, res, next) => {
 export const getProducts = async (req, res, next) => {
   try {
     const products = await Product.find({ isArchived: { $ne: true } })
-    res.json(products)
+    const mappedProducts = products.map(p => {
+      const obj = p.toObject();
+      if (obj.image && !obj.imageBase64) {
+        obj.imageBase64 = obj.image;
+      }
+      return obj;
+    });
+    res.json(mappedProducts)
   } catch (err) { 
     console.error(`[JOS] getProducts Error: ${err.message}`)
     next(err) 
@@ -246,7 +253,8 @@ export const addProduct = async (req, res, next) => {
       category,
       price,
       description,
-      image // image is base64 in JOS
+      image, // image is base64 in JOS
+      imageBase64: image
     })
 
     res.status(201).json(product)
@@ -270,7 +278,10 @@ export const updateProduct = async (req, res, next) => {
     product.category = category || product.category
     product.price = price !== undefined ? price : product.price
     product.description = description || product.description
-    if (image) product.image = image
+    if (image) {
+      product.image = image
+      product.imageBase64 = image
+    }
 
     await product.save()
     res.json(product)
