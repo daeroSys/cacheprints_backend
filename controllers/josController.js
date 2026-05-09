@@ -119,7 +119,14 @@ export const loginCustomer = async (req, res, next) => {
 export const getProducts = async (req, res, next) => {
   try {
     const products = await Product.find({ isArchived: { $ne: true } })
-    res.json(products)
+    const mappedProducts = products.map(p => {
+      const obj = p.toObject();
+      if (obj.image && !obj.imageBase64) {
+        obj.imageBase64 = obj.image;
+      }
+      return obj;
+    });
+    res.json(mappedProducts)
   } catch (err) { 
     console.error(`[JOS] getProducts Error: ${err.message}`)
     next(err) 
@@ -190,7 +197,14 @@ export const createOrder = async (req, res, next) => {
       fabricName: customizationDetails?.fabricName || '',
       cmyk: customizationDetails?.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 },
       upperPrice: customizationDetails?.productPrice || 450,
-      lowerPrice: customizationDetails?.productPrice || 450
+      lowerPrice: customizationDetails?.productPrice || 450,
+      designFiles: customizationDetails?.logoImage ? [{
+        fileId: `df-logo-${Date.now()}`,
+        name: 'Customer Logo',
+        url: customizationDetails.logoImage,
+        notes: 'Automatically attached from JOS customization.',
+        uploadedAt: new Date()
+      }] : []
     })
 
     res.status(201).json({ ok: true, order })
@@ -217,6 +231,36 @@ export const submitPaymentReceipt = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @route   PUT /api/jos/orders/:id/cancel
+// @desc    Cancel an order from JOS
+// ─────────────────────────────────────────────────────────────────────────────
+export const cancelOrder = async (req, res, next) => {
+  try {
+    const { cancellationReason } = req.body
+    let order = await Order.findOne({ _id: req.params.id })
+    
+    if (!order && mongoose.Types.ObjectId.isValid(req.params.id)) {
+      order = await Order.findOne({ _id: new mongoose.Types.ObjectId(req.params.id) })
+    }
+    
+    if (!order) return res.status(404).json({ ok: false, error: 'Order not found' })
+    
+    // Optional: Add logic to prevent cancelling if order is past certain stages
+    const nonCancellableStatuses = ['completed', 'rejected', 'cancelled', 'for-shipping']
+    if (nonCancellableStatuses.includes(order.status)) {
+      return res.status(400).json({ ok: false, error: `Order cannot be cancelled because it is already ${order.status}` })
+    }
+
+    order.status = 'cancelled' // Using cancelled as the frontend cancellation status
+    order.cancellationReason = cancellationReason || 'Cancelled by customer'
+    order.cancelledAt = new Date()
+    await order.save()
+    
+    res.json({ ok: true, order })
+  } catch (err) { next(err) }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @route   GET /api/jos/my-orders
@@ -246,7 +290,8 @@ export const addProduct = async (req, res, next) => {
       category,
       price,
       description,
-      image // image is base64 in JOS
+      image, // image is base64 in JOS
+      imageBase64: image
     })
 
     res.status(201).json(product)
@@ -270,7 +315,10 @@ export const updateProduct = async (req, res, next) => {
     product.category = category || product.category
     product.price = price !== undefined ? price : product.price
     product.description = description || product.description
-    if (image) product.image = image
+    if (image) {
+      product.image = image
+      product.imageBase64 = image
+    }
 
     await product.save()
     res.json(product)

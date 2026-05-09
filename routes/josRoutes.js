@@ -8,6 +8,7 @@ import {
   deleteProduct,
   createOrder,
   submitPaymentReceipt,
+  cancelOrder,
   getCustomerOrders,
   updateCustomerProfile,
   getAdminStats,
