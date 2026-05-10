@@ -22,7 +22,7 @@ const derivePayment = (paid, total) => {
 /**
  * Helper to perform automatic material deduction and log transaction.
  */
-async function performAutoDeduction(order, autoDeductions, notePrefix) {
+export async function performAutoDeduction(order, autoDeductions, notePrefix) {
   const txnItems = [];
   console.log(`[BOM] Calculating auto-deduction for ${order.orderId} (${notePrefix})`);
 
@@ -31,13 +31,39 @@ async function performAutoDeduction(order, autoDeductions, notePrefix) {
     const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const escapedName = escapeRegex(ad.name);
 
+    // 1. Try exact name match (case-insensitive)
     mat = await Material.findOne({ name: { $regex: new RegExp(`^${escapedName}$`, 'i') }, isArchived: false });
+
+    // 2. Try category-based fallbacks if exact name fails
     if (!mat) {
-      if (ad.name.toLowerCase() === 'paper') mat = await Material.findOne({ category: 'Paper', isArchived: false });
-      else if (ad.name.toLowerCase() === 'fabric') mat = await Material.findOne({ category: 'Fabric', isArchived: false });
-      else if (ad.name.toLowerCase() === 'thread') mat = await Material.findOne({ category: 'Thread', isArchived: false });
+      const lowerName = ad.name.toLowerCase();
+      
+      if (lowerName.includes('ink')) {
+        const colorMatch = ad.name.match(/\((.*?)\)/);
+        const color = colorMatch ? colorMatch[1] : null;
+        if (color) {
+          mat = await Material.findOne({ 
+            name: { $regex: new RegExp(escapeRegex(color), 'i') }, 
+            category: { $regex: /Ink/i }, 
+            isArchived: false 
+          });
+        }
+        if (!mat) mat = await Material.findOne({ category: { $regex: /Ink/i }, isArchived: false });
+      } 
+      else if (lowerName.includes('paper') || lowerName.includes(' in x ')) {
+        mat = await Material.findOne({ category: { $regex: /Paper/i }, isArchived: false });
+      }
+      else if (lowerName.includes('fabric')) {
+        mat = await Material.findOne({ category: { $regex: /Fabric/i }, isArchived: false });
+      }
+      else if (lowerName.includes('thread')) {
+        mat = await Material.findOne({ category: { $regex: /Thread/i }, isArchived: false });
+      }
     }
-    if (!mat) mat = await Material.findOne({ name: { $regex: new RegExp(escapedName, 'i') }, isArchived: false });
+
+    if (!mat) {
+      mat = await Material.findOne({ name: { $regex: new RegExp(escapedName, 'i') }, isArchived: false });
+    }
 
     if (mat) {
       const deductQty = Math.round(ad.qty * 100) / 100;
@@ -59,6 +85,88 @@ async function performAutoDeduction(order, autoDeductions, notePrefix) {
     }
   }
   return txnItems;
+}
+
+/**
+ * Handles automatic material deductions based on the production stage.
+ */
+export async function handleStageDeductions(order, nextStage, extraUpdate = {}) {
+  const allTxnItems = [];
+  
+  // PHASE 1: Heat Press (Deduct Ink and Paper)
+  if (nextStage === 'Heat Press') {
+    try {
+      const coverageFactor = extraUpdate?.coverageFactor !== undefined 
+        ? extraUpdate.coverageFactor 
+        : (order.coverageFactor !== undefined ? order.coverageFactor : 0.25); // Fallback to 25%
+
+      const bomResult = computeOrderBom({
+        rows: order.rows,
+        productType: order.productType,
+        cmyk: order.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 },
+        coverageFactor: coverageFactor
+      });
+
+      const totalInk = bomResult.totals.ink;
+      const cmyk = order.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 };
+      const totalCmyk = (cmyk.c + cmyk.m + cmyk.y + cmyk.k) || 1;
+      
+      const autoDeductions = [
+        { name: 'INK (CYAN)',    qty: (totalInk * (cmyk.c / totalCmyk)) },
+        { name: 'INK (MAGENTA)', qty: (totalInk * (cmyk.m / totalCmyk)) },
+        { name: 'INK (YELLOW)',  qty: (totalInk * (cmyk.y / totalCmyk)) },
+        { name: 'INK (BLACK)',   qty: (totalInk * (cmyk.k / totalCmyk)) },
+        { name: '36 in x 100 m', qty: bomResult.totals.paper36 },
+        { name: '44 in x 100 m', qty: bomResult.totals.paper44 }
+      ];
+      
+      const items = await performAutoDeduction(order, autoDeductions, `Ink & Paper`);
+      allTxnItems.push(...items);
+    } catch (bomErr) {
+      console.error('[BOM] Error during Ink/Paper auto-deduction:', bomErr);
+    }
+  }
+
+  // PHASE 2: Sewing (Deduct Fabric)
+  if (nextStage === 'Sewing') {
+    try {
+      const bomResult = computeOrderBom({
+        rows: order.rows,
+        productType: order.productType,
+        cmyk: order.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 }
+      });
+      const autoDeductions = [
+        { name: order.fabricName || 'Fabric', qty: bomResult.totals.fabric }
+      ];
+      const items = await performAutoDeduction(order, autoDeductions, `Fabric`);
+      allTxnItems.push(...items);
+    } catch (bomErr) {
+      console.error('[BOM] Error during Fabric auto-deduction:', bomErr);
+    }
+  }
+
+  // PHASE 3: Quality Check (Deduct Thread)
+  if (nextStage === 'Quality Check') {
+    try {
+      const threadName = extraUpdate?.threadName || 'Thread';
+      const bomResult = computeOrderBom({
+        rows: order.rows,
+        productType: order.productType,
+        cmyk: order.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 }
+      });
+      const autoDeductions = [
+        { name: threadName, qty: bomResult.totals.thread },
+        { name: 'WAIST CORD', qty: bomResult.totals.waistCord },
+        { name: 'BUTTONS',    qty: bomResult.totals.buttons }
+      ];
+      const items = await performAutoDeduction(order, autoDeductions, `Others (Thread, Cord, Buttons)`);
+      allTxnItems.push(...items);
+    } catch (bomErr) {
+      console.error('[BOM] Error during Thread auto-deduction:', bomErr);
+    }
+  }
+
+  return allTxnItems;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -156,10 +264,27 @@ export const updateOrder = async (req, res, next) => {
       if (design)     order.design     = design.trim()
       if (deadline)   order.deadline   = new Date(deadline)
       if (status) {
+        const oldStatus = order.status
         order.status = status
         if (status === 'completed' && !order.isCompleted) {
           order.isCompleted = true
           order.completedAt = new Date()
+        }
+        
+        // Trigger auto-deduction if moving to a production stage
+        if (status !== oldStatus) {
+           const items = await handleStageDeductions(order, status)
+           if (items.length > 0) {
+             await Transaction.create({
+               transactionId: `TXN-${Date.now()}`,
+               type: 'Stock-Out',
+               items,
+               date: new Date(),
+               ref: order.orderId,
+               notes: `Auto-deducted on status change to ${status}`,
+               createdBy: req.user.username || 'Admin',
+             });
+           }
         }
       }
       if (upperPrice) order.upperPrice = Number(upperPrice)
@@ -280,79 +405,9 @@ export const advanceOrderStage = async (req, res, next) => {
 
     await order.save()
 
-    const allTxnItems = [];
-
-    // ── Automatic Material Deduction per Phase ───────────────────────────────
+    const allTxnItems = await handleStageDeductions(order, nextStage, extraUpdate);
     
-    // PHASE 1: Heat Press (Deduct Ink and Paper)
-    if (nextStage === 'Heat Press' && (extraUpdate?.coverageFactor !== undefined || order.coverageFactor !== undefined)) {
-      try {
-        const coverageFactor = extraUpdate?.coverageFactor !== undefined ? extraUpdate.coverageFactor : order.coverageFactor;
-        const bomResult = computeOrderBom({
-          rows: order.rows,
-          productType: order.productType,
-          cmyk: order.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 },
-          coverageFactor: coverageFactor
-        });
-        const totalInk = bomResult.totals.ink;
-        const cmyk = order.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 };
-        const totalCmyk = (cmyk.c + cmyk.m + cmyk.y + cmyk.k) || 1;
-        const autoDeductions = [
-          { name: 'INK (CYAN)',    qty: (totalInk * (cmyk.c / totalCmyk)) },
-          { name: 'INK (MAGENTA)', qty: (totalInk * (cmyk.m / totalCmyk)) },
-          { name: 'INK (YELLOW)',  qty: (totalInk * (cmyk.y / totalCmyk)) },
-          { name: 'INK (BLACK)',   qty: (totalInk * (cmyk.k / totalCmyk)) },
-          { name: '36 in x 100 m', qty: bomResult.totals.paper36 },
-          { name: '44 in x 100 m', qty: bomResult.totals.paper44 }
-        ];
-        const items = await performAutoDeduction(order, autoDeductions, `Ink & Paper`);
-        allTxnItems.push(...items);
-      } catch (bomErr) {
-        console.error('[BOM] Error during Ink/Paper auto-deduction:', bomErr);
-      }
-    }
-
-    // PHASE 2: Sewing (Deduct Fabric)
-    if (nextStage === 'Sewing') {
-      try {
-        const bomResult = computeOrderBom({
-          rows: order.rows,
-          productType: order.productType,
-          cmyk: order.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 }
-        });
-        const autoDeductions = [
-          { name: order.fabricName || 'Fabric', qty: bomResult.totals.fabric }
-        ];
-        const items = await performAutoDeduction(order, autoDeductions, `Fabric`);
-        allTxnItems.push(...items);
-      } catch (bomErr) {
-        console.error('[BOM] Error during Fabric auto-deduction:', bomErr);
-      }
-    }
-
-    // PHASE 3: Quality Check (Deduct Thread)
-    if (nextStage === 'Quality Check') {
-      try {
-        const threadName = extraUpdate?.threadName || 'Thread';
-        const bomResult = computeOrderBom({
-          rows: order.rows,
-          productType: order.productType,
-          cmyk: order.cmyk || { c: 0.25, m: 0.25, y: 0.25, k: 0.25 }
-        });
-        const autoDeductions = [
-          { name: threadName, qty: bomResult.totals.thread },
-          { name: 'WAIST CORD', qty: bomResult.totals.waistCord },
-          { name: 'BUTTONS',    qty: bomResult.totals.buttons }
-        ];
-        const items = await performAutoDeduction(order, autoDeductions, `Others (Thread, Cord, Buttons)`);
-        allTxnItems.push(...items);
-
-      } catch (bomErr) {
-        console.error('[BOM] Error during Thread auto-deduction:', bomErr);
-      }
-    }
-
-    // Deduct consumed materials manually
+    // Deduct consumed materials manually (passed from the modal)
     if (consumedMaterials && consumedMaterials.length > 0) {
       for (const cm of consumedMaterials) {
         if (!cm.materialId || !cm.qty) continue;
@@ -380,7 +435,7 @@ export const advanceOrderStage = async (req, res, next) => {
         items: allTxnItems,
         date: new Date(),
         ref: order.orderId,
-        notes: `Used in ${prevStage} – ${order.orderId}`,
+        notes: note || `Used in ${prevStage} – ${order.orderId}`,
         createdBy: req.user.username,
       });
       console.log(`[BOM] Created consolidated transaction for ${order.orderId} (Status: ${nextStage})`);
