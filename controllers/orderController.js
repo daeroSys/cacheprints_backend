@@ -651,7 +651,7 @@ export const syncExternalOrder = async (req, res, next) => {
       fabricName: customizationDetails?.fabricName || customizationDetails?.fabricType || '',
       contact: phoneNumber || '',
       design: designStr,
-      rows: rows,
+      rows: [], // Defer population until Printing stage as requested
       upperPrice: basePrice,
       lowerPrice: 0,
       totalAmount: Number(totalPrice) || 0,
@@ -793,7 +793,26 @@ export const syncFinalDesign = async (req, res, next) => {
       uploadedAt: new Date()
     });
 
-    // 3. Advance status to Printing
+    // 3. Fetch/Populate the Sheet (Lineup) now that we are hitting Printing Stage
+    const cust = order.customizationDetails;
+    if (cust && cust.lineup && (!order.rows || order.rows.length === 0)) {
+      console.log(`[IMS Sync] Fetching/Populating sheet for ${order.orderId} at Printing stage.`);
+      const productType = cust.apparelType || cust.productName || order.productType || 'Custom Apparel';
+      const lineup = cust.lineup || [];
+      
+      order.rows = lineup.map((player, idx) => ({
+        no: player.jerseyNumber || player.number || String(idx + 1).padStart(2, '0'),
+        name: player.surname || player.name || `Player ${idx + 1}`,
+        upperType: productType,
+        upperSize: player.size || player.variant || 'M',
+        addOn: player.addOn?.name || player.addOns?.[0]?.name || (typeof player.addOn === 'string' ? player.addOn : ''),
+        addOnPrice: player.addOn?.price || player.addOns?.[0]?.price || 0,
+        lowerType: productType,
+        lowerSize: player.size || player.variant || 'M'
+      }));
+    }
+
+    // 4. Advance status to Printing
     if (order.status === 'Designing') {
       order.status = 'Printing';
     }
