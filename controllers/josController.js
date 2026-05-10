@@ -191,7 +191,7 @@ export const createOrder = async (req, res, next) => {
       deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days deadline
       
       // IMS Mappings
-      rows: [], // Defer population until Printing stage as requested
+      rows,
       design: `Primary: ${customizationDetails?.primaryColor || 'N/A'} | Fabric: ${customizationDetails?.fabricName || 'N/A'}`,
       productType: apparelType,
       fabricName: customizationDetails?.fabricName || '',
@@ -463,27 +463,6 @@ export const startProduction = async (req, res, next) => {
     order.finalDesignUrl = finalDesignUrl
     order.status = 'Printing'
     order.productionPhase = 'Printing' 
-
-    // Fetch/Populate the Sheet (Lineup) now that we are hitting Printing Stage
-    const cust = order.customizationDetails
-    if (cust && cust.lineup && (!order.rows || order.rows.length === 0)) {
-      console.log(`[JOS Admin] Fetching/Populating sheet for ${order.orderId} at Printing stage.`)
-      const apparelType = cust.apparelType || ''
-      order.rows = (cust.lineup || []).map(player => ({
-        id: player.id,
-        name: player.surname,
-        surname: player.surname,
-        no: player.jerseyNumber,
-        jerseyNumber: player.jerseyNumber,
-        upperType: apparelType,
-        lowerType: apparelType,
-        upperSize: player.size,
-        lowerSize: player.size,
-        size: player.size,
-        addOn: player.addOn
-      }))
-    }
-
     await order.save()
     
     await logActivity({
